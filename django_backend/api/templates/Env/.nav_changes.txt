@@ -1,3 +1,0 @@
-Added vertical side navigation in header with buttons: Profile, Service, Order, History, Logout.
-CSS: .side-nav (absolute left), .nav-btn styles, hide on small screens.
-TODO updated.
