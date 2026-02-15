@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="Env/css/style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="left-panel">
+        <h2>Create</h2>
+        <h1>Account</h1>
+        <p>สมัครสมาชิกใหม่</p>
+    </div>
+
+    <div class="right-panel">
+        <h2>Sign Up</h2>
+
+        <form id="signupForm" method="POST">
+            <input 
+                type="text" 
+                id="fullName"
+                name="fullName"
+                placeholder="Full Name" 
+                required
+            >
+
+            <input 
+                type="tel" 
+                id="phoneNumber"
+                name="phoneNumber"
+                placeholder="Phone Number" 
+                maxlength="10"
+                required
+            >
+
+            <input 
+                type="text" 
+                id="username"
+                name="username"
+                placeholder="Username" 
+                required
+            >
+            
+            <input 
+                type="password" 
+                id="password"
+                name="password"
+                placeholder="Password" 
+                required
+            >
+
+            <button type="submit">Register</button>
+
+            <button type="button" class="signup-btn"
+                onclick="window.location.href='Login.html'">
+                Back to Login
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+<!-- API Integration -->
+<script src="Env/js/api.js"></script>
+<script>
+    // Handle signup form submission
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const fullName = document.getElementById('fullName').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            // Try API signup first
+            const response = await authAPI.signup(fullName, phoneNumber, username, password);
+
+            if (response.success) {
+                alert('สมัครสมาชิกสำเร็จแล้ว! กรุณา Login');
+                // Store user data locally as backup
+                localStorage.setItem('newUser_' + username, JSON.stringify({
+                    fullName,
+                    phoneNumber,
+                    username,
+                    password
+                }));
+                window.location.href = 'Login.html';
+            } else {
+                // Fallback to local signup if API fails
+                console.warn('API not available, using local signup');
+                handleLocalSignup(fullName, phoneNumber, username, password);
+            }
+        } catch (error) {
+            console.error('Signup error:', error);
+            handleLocalSignup(fullName, phoneNumber, username, password);
+        }
+    });
+
+    // Fallback local signup (when API is not available)
+    function handleLocalSignup(fullName, phoneNumber, username, password) {
+        if (phoneNumber.length !== 10 || isNaN(phoneNumber)) {
+            alert('เบอร์โทรศัพท์ต้องเป็น 10 หลัก');
+            return;
+        }
+
+        // Store user data in localStorage
+        localStorage.setItem('newUser_' + username, JSON.stringify({
+            fullName,
+            phoneNumber,
+            username,
+            password
+        }));
+
+        alert('สมัครสมาชิกสำเร็จแล้ว! กรุณา Login');
+        window.location.href = 'Login.html';
+    }
+</script>
+
+</body>
+</html>

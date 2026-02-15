@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking - เช่ารถออนไลน์</title>
+    <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/booking.css' %}">
+</head>
+<body>
+    <div class="booking-container">
+        <div class="booking-sidebar">
+            <button class="nav-btn" onclick="window.location.href='Profile.html'"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></button>
+            <button class="nav-btn active" onclick="#"><span class="nav-icon">🚗</span><span class="nav-text">Service</span></button>
+            <button class="nav-btn" onclick="window.location.href='Order.html'"><span class="nav-icon">📦</span><span class="nav-text">Order</span></button>
+            <button class="nav-btn" onclick="window.location.href='History.html'"><span class="nav-icon">🕘</span><span class="nav-text">History</span></button>
+            <button class="nav-btn" onclick="logout()"><span class="nav-icon">🔓</span><span class="nav-text">Logout</span></button>
+        </div>
+
+        <div class="booking-main">
+            <div class="booking-header">
+                <h1>🚗 บริการเช่ารถออนไลน์</h1>
+            </div>
+
+            <div class="booking-content">
+                <div class="calendar-panel">
+                    <div class="calendar-header">
+                        <h2>เลือกวันรับรถ และ วันคืนรถ</h2>
+                        <div style="margin-bottom:20px;">
+                            <label>วันรับรถ</label>
+                            <input type="date" id="start_date" class="form-control" required>
+
+                            <label style="margin-top:10px;">วันคืนรถ</label>
+                            <input type="date" id="end_date" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-nav">
+                        <button onclick="previousMonth()">← ก่อนหน้า</button>
+                        <span class="month-year" id="monthYear"></span>
+                        <button onclick="nextMonth()">ถัดไป →</button>
+                    </div>
+                    <div class="calendar-grid" id="calendar"></div>
+                </div>
+
+                <div class="vehicles-panel">
+                    <div class="vehicles-header">
+                        <h3>รถยนต์ที่ว่าง</h3>
+                        <p>เลือกวันที่เพื่อดูรายการรถยนต์ที่ว่างสำหรับการเช่า</p>
+                    </div>
+
+                    <div class="selected-date" id="selectedInfo">โปรดเลือกวันรับ/คืน</div>
+
+                    <div id="pricePreview" style="margin-bottom:12px; display:none;">
+                        <strong>จำนวนวัน:</strong> <span id="previewDays">0</span>
+                        &nbsp;|&nbsp;
+                        <strong>มัดจำ 30%:</strong> <span id="previewDeposit">0</span> บาท
+                        &nbsp;|&nbsp;
+                        <strong>ราคารวม (โดยประมาณ):</strong> <span id="previewPrice">0</span> บาท
+                    </div>
+
+                    <div class="vehicles-grid" id="vehiclesGrid">
+                        {% for car in cars %}
+                            <div class="vehicle-card {% if not car.is_active %}disabled{% endif %}"
+                                id="car-{{ car.id }}"
+                                onclick="onClickCar({{ car.id }}, '{{ car.name|escapejs }}', {{ car.price_per_day }})">
+
+                                <div class="vehicle-image">🚗</div>
+                                <div class="vehicle-name">{{ car.name }}</div>
+                                <div class="vehicle-price">{{ car.price_per_day }} บาท/วัน</div>
+
+                                {% if car.is_active %}
+                                    <div class="vehicle-status">ว่าง</div>
+                                {% else %}
+                                    <div class="vehicle-status" style="color:red;">ปิดใช้งาน</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <form id="bookingForm" method="POST" action="{% url 'booking' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="car_id" id="selectedCarId">
+                        <input type="hidden" name="start_date" id="form_start_date" >
+                        <input type="hidden" name="end_date" id="form_end_date">
+                        <input type="hidden" name="pickup_type" id="form_pickup_type" value="self">
+                        <input type="hidden" name="current_province" id="form_current_province">
+                        <input type="hidden" name="destination_province" id="form_destination_province">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="zoneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>เลือกจังหวัด/อำเภอ</h2>
+                <button class="close-btn" onclick="closeZoneModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>📍 จังหวัดปัจจุบัน (ที่จะรับรถ)</label>
+                    <select id="currentProvince">
+                        <option value="">-- เลือกจังหวัด --</option>
+                        <option value="bangkok">กรุงเทพมหานคร</option>
+                        <option value="chiang-mai">เชียงใหม่</option>
+                        <option value="chiang-rai">เชียงราย</option>
+                        <option value="phuket">ภูเก็ต</option>
+                        <option value="krabi">กระบี่</option>
+                        <option value="pattaya">พัทยา</option>
+                        <option value="rayong">ระยอง</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📍 จังหวัดปลายทาง (ที่ต้องการไป)</label>
+                    <select id="destinationProvince">
+                        <option value="">-- เลือกจังหวัด --</option>
+                        <option value="bangkok">กรุงเทพมหานคร</option>
+                        <option value="chiang-mai">เชียงใหม่</option>
+                        <option value="chiang-rai">เชียงราย</option>
+                        <option value="phuket">ภูเก็ต</option>
+                        <option value="krabi">กระบี่</option>
+                        <option value="pattaya">พัทยา</option>
+                        <option value="rayong">ระยอง</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📞 เบอร์ติดต่อ</label>
+                    <input type="tel" id="contactNumber" placeholder="ระบุเบอร์โทรศัพท์ของคุณ" maxlength="10">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeZoneModal()">ยกเลิก</button>
+                <button class="btn-proceed" onclick="proceedToDetails()">ถัดไป</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'Env/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'Env/js/booking.js' %}"></script>
+</body>
+</html>
