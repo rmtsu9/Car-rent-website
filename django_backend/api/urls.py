@@ -6,8 +6,12 @@ urlpatterns = [
     path('login/', views.login, name='login'),
     path('signup/', views.signup, name='signup'),
     path('admin/', views.admin_page, name='admin'),
+    path('booking/availability/', views.booking_availability, name='booking_availability'),
     path('booking/', views.booking, name='booking'),
-    path('history/', views.history, name='history'),
     path('order/', views.order, name='order'),
+    path('history/', views.history, name='history'),
     path('profile/', views.profile, name='profile'),
+    path('approve-booking/<int:booking_id>/', views.approve_booking, name='approve_booking'),
+    path('reject-booking/<int:booking_id>/', views.reject_booking, name='reject_booking'),
+    path('logout/', views.logout, name='logout')
 ]

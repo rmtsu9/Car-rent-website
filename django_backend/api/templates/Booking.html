@@ -1,141 +1,244 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking - เช่ารถออนไลน์</title>
+    <title>Booking - Car Rental</title>
+    {% load static %}
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'Env/css/booking.css' %}">
 </head>
 <body>
     <div class="booking-container">
-        <div class="booking-sidebar">
-            <button class="nav-btn" onclick="window.location.href='Profile.html'"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></button>
-            <button class="nav-btn active" onclick="#"><span class="nav-icon">🚗</span><span class="nav-text">Service</span></button>
-            <button class="nav-btn" onclick="window.location.href='Order.html'"><span class="nav-icon">📦</span><span class="nav-text">Order</span></button>
-            <button class="nav-btn" onclick="window.location.href='History.html'"><span class="nav-icon">🕘</span><span class="nav-text">History</span></button>
-            <button class="nav-btn" onclick="logout()"><span class="nav-icon">🔓</span><span class="nav-text">Logout</span></button>
-        </div>
+        <aside class="booking-sidebar">
+            <button class="nav-btn" onclick="window.location.href='{% url 'profile' %}'">
+                <span class="nav-text">Profile</span>
+            </button>
+            <button class="nav-btn active" type="button">
+                <span class="nav-text">Service</span>
+            </button>
+            <button class="nav-btn" onclick="window.location.href='{% url 'order' %}'">
+                <span class="nav-text">Order</span>
+            </button>
+            <button class="nav-btn" onclick="window.location.href='{% url 'history' %}'">
+                <span class="nav-text">History</span>
+            </button>
+            <button class="nav-btn" onclick="logout()">
+                <span class="nav-text">Logout</span>
+            </button>
+        </aside>
 
-        <div class="booking-main">
-            <div class="booking-header">
-                <h1>🚗 บริการเช่ารถออนไลน์</h1>
+        <main class="booking-main">
+            <header class="booking-header">
+                <h1>Car Rental Booking</h1>
+                <p>Select all required details step-by-step before confirming your order</p>
+            </header>
+
+            <div class="stepper" id="stepper">
+                <div class="step-indicator active" data-step="1">
+                    <span class="step-number">1</span>
+                    <span class="step-label">Choose Date and Car</span>
+                </div>
+                <div class="step-indicator" data-step="2">
+                    <span class="step-number">2</span>
+                    <span class="step-label">Choose Route and Pickup Type</span>
+                </div>
+                <div class="step-indicator" data-step="3">
+                    <span class="step-number">3</span>
+                    <span class="step-label">Review and Confirm</span>
+                </div>
             </div>
 
-            <div class="booking-content">
-                <div class="calendar-panel">
-                    <div class="calendar-header">
-                        <h2>เลือกวันรับรถ และ วันคืนรถ</h2>
-                        <div style="margin-bottom:20px;">
-                            <label>วันรับรถ</label>
-                            <input type="date" id="start_date" class="form-control" required>
+            <form id="bookingForm" method="POST" action="{% url 'booking' %}" data-availability-url="{% url 'booking_availability' %}">
+                {% csrf_token %}
 
-                            <label style="margin-top:10px;">วันคืนรถ</label>
-                            <input type="date" id="end_date" class="form-control" required>
+                <input type="hidden" name="car_id" id="form_car_id">
+                <input type="hidden" name="start_date" id="form_start_date">
+                <input type="hidden" name="end_date" id="form_end_date">
+                <input type="hidden" name="pickup_type" id="form_pickup_type" value="self">
+                <input type="hidden" name="current_province" id="form_current_province">
+                <input type="hidden" name="destination_province" id="form_destination_province">
+                <input type="hidden" name="contact_number" id="form_contact_number">
+
+                <section class="wizard-step active" data-step="1">
+                    <div class="step-layout">
+                        <div class="panel panel-date">
+                            <h2>Select Pickup and Return Dates</h2>
+                            <div class="form-group">
+                                <label for="start_date">Pickup Date</label>
+                                <input type="date" id="start_date" min="{{ tomorrow|date:'Y-m-d' }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="end_date">Return Date</label>
+                                <input type="date" id="end_date" min="{{ tomorrow|date:'Y-m-d' }}" required>
+                            </div>
+                            <p class="help-text">Current date is not allowed. Booking must start at least 1 day in advance.</p>
+                            <p class="inline-message" id="dateValidationMessage"></p>
+                        </div>
+
+                        <div class="panel panel-cars">
+                            <div class="panel-head">
+                                <h2>Select an Available Car</h2>
+                                <p>Cars with overlapping bookings for selected dates will be marked as Full and cannot be selected.</p>
+                            </div>
+
+                            <div class="selected-info" id="selectedDateInfo">Please choose pickup and return dates first</div>
+
+                            <div class="cars-grid" id="carsGrid">
+                                {% for car in cars %}
+                                    <button
+                                        type="button"
+                                        class="car-card loading"
+                                        data-car-id="{{ car.id }}"
+                                        data-car-name="{{ car.name|escape }}"
+                                        data-car-price="{{ car.price_per_day }}"
+                                    >
+                                        <div class="car-name">{{ car.name }}</div>
+                                        <div class="car-price">{{ car.price_per_day }} THB/day</div>
+                                        <div class="car-status">Waiting for dates</div>
+                                    </button>
+                                {% empty %}
+                                    <div class="empty-message">No cars available in the system</div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="calendar-nav">
-                        <button onclick="previousMonth()">← ก่อนหน้า</button>
-                        <span class="month-year" id="monthYear"></span>
-                        <button onclick="nextMonth()">ถัดไป →</button>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="btn-primary" id="step1NextBtn">Next</button>
                     </div>
-                    <div class="calendar-grid" id="calendar"></div>
-                </div>
+                </section>
 
-                <div class="vehicles-panel">
-                    <div class="vehicles-header">
-                        <h3>รถยนต์ที่ว่าง</h3>
-                        <p>เลือกวันที่เพื่อดูรายการรถยนต์ที่ว่างสำหรับการเช่า</p>
-                    </div>
-
-                    <div class="selected-date" id="selectedInfo">โปรดเลือกวันรับ/คืน</div>
-
-                    <div id="pricePreview" style="margin-bottom:12px; display:none;">
-                        <strong>จำนวนวัน:</strong> <span id="previewDays">0</span>
-                        &nbsp;|&nbsp;
-                        <strong>มัดจำ 30%:</strong> <span id="previewDeposit">0</span> บาท
-                        &nbsp;|&nbsp;
-                        <strong>ราคารวม (โดยประมาณ):</strong> <span id="previewPrice">0</span> บาท
-                    </div>
-
-                    <div class="vehicles-grid" id="vehiclesGrid">
-                        {% for car in cars %}
-                            <div class="vehicle-card {% if not car.is_active %}disabled{% endif %}"
-                                id="car-{{ car.id }}"
-                                onclick="onClickCar({{ car.id }}, '{{ car.name|escapejs }}', {{ car.price_per_day }})">
-
-                                <div class="vehicle-image">🚗</div>
-                                <div class="vehicle-name">{{ car.name }}</div>
-                                <div class="vehicle-price">{{ car.price_per_day }} บาท/วัน</div>
-
-                                {% if car.is_active %}
-                                    <div class="vehicle-status">ว่าง</div>
-                                {% else %}
-                                    <div class="vehicle-status" style="color:red;">ปิดใช้งาน</div>
-                                {% endif %}
+                <section class="wizard-step" data-step="2">
+                    <div class="panel">
+                        <h2>Select Route and Pickup Method</h2>
+                        <div class="form-row two-col">
+                            <div class="form-group">
+                                <label for="currentProvince">Current Province (pickup point)</label>
+                                <select id="currentProvince" required>
+                                    <option value="">-- Select province --</option>
+                                    <option value="Bangkok">Bangkok</option>
+                                    <option value="Chiang Mai">Chiang Mai</option>
+                                    <option value="Chiang Rai">Chiang Rai</option>
+                                    <option value="Phuket">Phuket</option>
+                                    <option value="Krabi">Krabi</option>
+                                    <option value="Pattaya">Pattaya</option>
+                                    <option value="Rayong">Rayong</option>
+                                </select>
                             </div>
-                        {% endfor %}
+                            <div class="form-group">
+                                <label for="destinationProvince">Destination Province</label>
+                                <select id="destinationProvince" required>
+                                    <option value="">-- Select province --</option>
+                                    <option value="Bangkok">Bangkok</option>
+                                    <option value="Chiang Mai">Chiang Mai</option>
+                                    <option value="Chiang Rai">Chiang Rai</option>
+                                    <option value="Phuket">Phuket</option>
+                                    <option value="Krabi">Krabi</option>
+                                    <option value="Pattaya">Pattaya</option>
+                                    <option value="Rayong">Rayong</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="pickup-options">
+                            <label class="pickup-option">
+                                <input type="radio" name="pickup_option" value="self" checked>
+                                <span>
+                                    <strong>Self Pickup</strong>
+                                    <small>You pick up the car at selected pickup point</small>
+                                </span>
+                            </label>
+                            <label class="pickup-option">
+                                <input type="radio" name="pickup_option" value="delivery">
+                                <span>
+                                    <strong>Delivery</strong>
+                                    <small>Staff arranges car delivery based on service terms</small>
+                                </span>
+                            </label>
+                        </div>
+                        <p class="inline-message" id="locationValidationMessage"></p>
                     </div>
 
-                    <form id="bookingForm" method="POST" action="{% url 'booking' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="car_id" id="selectedCarId">
-                        <input type="hidden" name="start_date" id="form_start_date" >
-                        <input type="hidden" name="end_date" id="form_end_date">
-                        <input type="hidden" name="pickup_type" id="form_pickup_type" value="self">
-                        <input type="hidden" name="current_province" id="form_current_province">
-                        <input type="hidden" name="destination_province" id="form_destination_province">
-                    </form>
-                </div>
-            </div>
-        </div>
+                    <div class="wizard-actions">
+                        <button type="button" class="btn-secondary" id="step2BackBtn">Back</button>
+                        <button type="button" class="btn-primary" id="step2NextBtn">Next</button>
+                    </div>
+                </section>
+
+                <section class="wizard-step" data-step="3">
+                    <div class="panel">
+                        <h2>Total Detail</h2>
+
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span>Selected Car</span>
+                                <strong id="summaryCar">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Pickup - Return Date</span>
+                                <strong id="summaryDate">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Total Rental Days</span>
+                                <strong id="summaryDays">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Current Province</span>
+                                <strong id="summaryCurrentProvince">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Destination Province</span>
+                                <strong id="summaryDestinationProvince">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Pickup Method</span>
+                                <strong id="summaryPickupType">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="price-summary">
+                            <div class="price-row">
+                                <span>Price per Day</span>
+                                <strong id="summaryPricePerDay">-</strong>
+                            </div>
+                            <div class="price-row">
+                                <span>Total Price</span>
+                                <strong id="summaryTotalPrice">-</strong>
+                            </div>
+                            <div class="price-row">
+                                <span>Deposit 30%</span>
+                                <strong id="summaryDeposit">-</strong>
+                            </div>
+                            <div class="price-row">
+                                <span>Remaining 70%</span>
+                                <strong id="summaryRemaining">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactNumber">Contact Number (staff will call back)</label>
+                            <input
+                                type="tel"
+                                id="contactNumber"
+                                maxlength="10"
+                                placeholder="Example: 08xxxxxxxx"
+                                inputmode="numeric"
+                                required
+                            >
+                        </div>
+                        <p class="inline-message" id="confirmValidationMessage"></p>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="btn-secondary" id="step3BackBtn">Back</button>
+                        <button type="button" class="btn-primary" id="confirmBookingBtn">Confirm and Go to Order</button>
+                    </div>
+                </section>
+            </form>
+        </main>
     </div>
 
-    <div id="zoneModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>เลือกจังหวัด/อำเภอ</h2>
-                <button class="close-btn" onclick="closeZoneModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>📍 จังหวัดปัจจุบัน (ที่จะรับรถ)</label>
-                    <select id="currentProvince">
-                        <option value="">-- เลือกจังหวัด --</option>
-                        <option value="bangkok">กรุงเทพมหานคร</option>
-                        <option value="chiang-mai">เชียงใหม่</option>
-                        <option value="chiang-rai">เชียงราย</option>
-                        <option value="phuket">ภูเก็ต</option>
-                        <option value="krabi">กระบี่</option>
-                        <option value="pattaya">พัทยา</option>
-                        <option value="rayong">ระยอง</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📍 จังหวัดปลายทาง (ที่ต้องการไป)</label>
-                    <select id="destinationProvince">
-                        <option value="">-- เลือกจังหวัด --</option>
-                        <option value="bangkok">กรุงเทพมหานคร</option>
-                        <option value="chiang-mai">เชียงใหม่</option>
-                        <option value="chiang-rai">เชียงราย</option>
-                        <option value="phuket">ภูเก็ต</option>
-                        <option value="krabi">กระบี่</option>
-                        <option value="pattaya">พัทยา</option>
-                        <option value="rayong">ระยอง</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📞 เบอร์ติดต่อ</label>
-                    <input type="tel" id="contactNumber" placeholder="ระบุเบอร์โทรศัพท์ของคุณ" maxlength="10">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancel" onclick="closeZoneModal()">ยกเลิก</button>
-                <button class="btn-proceed" onclick="proceedToDetails()">ถัดไป</button>
-            </div>
-        </div>
-    </div>
     <script src="{% static 'Env/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'Env/js/booking.js' %}"></script>
 </body>

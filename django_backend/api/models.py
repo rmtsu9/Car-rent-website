@@ -43,6 +43,7 @@ class Booking(models.Model):
     destination_province = models.CharField(max_length=100)
     pickup_type = models.CharField(max_length=20)
     total_price = models.IntegerField(default=0)
+    contact_number = models.CharField(max_length=15)
     
     @property
     def deposit(self):
