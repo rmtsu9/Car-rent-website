@@ -1,10 +1,356 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Drive</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --blue:#0A58FF;
+  --blue-light:#5FA8FF;
+  --dark:#0B0F14;
+  --soft:#11151C;
+  --white:#FFFFFF;
+  --offwhite:#F4F6F9;
+  --text-dark:#11151C;
+  --border:rgba(10,88,255,0.15);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Montserrat', sans-serif;
+  background:var(--dark);
+  color:var(--white);
+  overflow-x:hidden;
+}
+
+/* NAVBAR */
+.navbar{
+  position:fixed;
+  width:100%;
+  padding:18px 70px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:rgba(11,15,20,.6);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  z-index:1000;
+  transition:.4s;
+}
+
+.navbar.scrolled{
+  background:var(--white);
+}
+
+.navbar.scrolled .logo,
+.navbar.scrolled nav a{
+  color:var(--text-dark);
+}
+
+.logo{
+  font-weight:600;
+  letter-spacing:3px;
+  font-size:18px;
+}
+
+.navbar nav a{
+  margin-left:40px;
+  text-decoration:none;
+  color:var(--white);
+  font-size:13px;
+  letter-spacing:1.8px;
+  text-transform:uppercase;
+  position:relative;
+  transition:.3s;
+}
+
+.navbar nav a::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-6px;
+  width:0;
+  height:2px;
+  background:var(--blue);
+  transition:.4s;
+}
+
+.navbar nav a:hover::after{width:100%;}
+
+/* HERO (Dark) */
+.hero {
+  position: relative;
+  height: 100vh;
+
+  background:
+    linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.05) 70%),
+    url("Image/porsche.jpg");
+
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  padding: 0 8%;
+}
+
+
+.hero h1 {
+  font-size: 58px;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 16px;
+  color: #4da3ff;
+  letter-spacing: 1px;
+  margin-bottom: 35px;
+}
+
+.hero-content {
+  max-width: 600px;
+  text-align: left;
+}
+
+
+.btn {
+  display: inline-block;
+  padding: 14px 32px;
+  border: 1px solid rgba(255,255,255,0.7);
+  color: white;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  background: white;
+  color: black;
+}
+
+
+/* WHITE SECTION */
+.white-section{
+  background:var(--offwhite);
+  color:var(--text-dark);
+  padding:140px 8%;
+}
+
+.features{
+  display:flex;
+  gap:40px;
+}
+
+.feature-box{
+  flex:1;
+  padding:60px 40px;
+  background:var(--white);
+  border:1px solid rgba(0,0,0,0.05);
+  transition:.4s;
+}
+
+.feature-box h3{
+  color:var(--blue);
+  margin-bottom:20px;
+  letter-spacing:2px;
+}
+
+.feature-box:hover{
+  transform:translateY(-10px);
+  box-shadow:0 20px 40px rgba(0,0,0,0.08);
+}
+
+/* MODELS (Dark again) */
+.models{
+  padding:140px 8%;
+  background:var(--soft);
+}
+
+.model-grid{
+  display:flex;
+  gap:40px;
+}
+
+.model-card{
+  flex:1;
+  height:420px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+
+.model-card img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:1.2s;
+}
+
+.model-card:hover img{
+  transform:scale(1.08);
+}
+
+.model-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(to top, rgba(11,15,20,.9), transparent);
+}
+
+.model-card h2{
+  position:absolute;
+  bottom:30px;
+  left:30px;
+  font-weight:500;
+  letter-spacing:2px;
+}
+
+/* FOOTER (White) */
+footer{
+  background:var(--white);
+  color:var(--text-dark);
+  text-align:center;
+  padding:40px;
+  font-size:13px;
+}
+
+/* Reveal */
+.reveal{
+  opacity:0;
+  transform:translateY(40px);
+  transition:1s;
+}
+.reveal.active{
+  opacity:1;
+  transform:translateY(0);
+}
+
+.menu{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.menu span{
+  color:rgba(255,255,255,0.4);
+}
+
+
+/* Responsive */
+@media (max-width: 1000px) {
+
+  .features,
+  .model-grid {
+    flex-direction: column;
+  }
+
+  .navbar {
+    padding: 18px 30px;
+  }
+
+  .hero {
+    padding: 0 5%;
+    background-position: right center;
+  }
+
+  .hero h1 {
+    font-size: 38px;
+  }
+
+  .hero-content {
+    max-width: 100%;
+  }
+}
+</style>
 </head>
+
 <body>
-    <h2>Welcome to the Admin Dashboard</h2>
+
+<header class="navbar">
+  <div class="logo">MODERN DRIVE</div>
+    <nav>
+        <a href="#">MODEL</a>
+        <a href="#">SIGN IN</a>
+        <a href="#">LOGIN</a>
+        <a href="#">CONTACT</a>
+    </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-content reveal">
+    <h1>Precision in Motion</h1>
+    <p>White. Blue. Black. Balanced.</p>
+    <a href="#" class="btn">Explore Models</a>
+  </div>
+</section>
+
+
+<section class="white-section">
+  <div class="features">
+    <div class="feature-box reveal">
+      <h3>Performance</h3>
+      <p>Dynamic engineering with confident handling and sharp response.</p>
+    </div>
+    <div class="feature-box reveal">
+      <h3>Innovation</h3>
+      <p>Advanced digital systems and intelligent driving assistance.</p>
+    </div>
+    <div class="feature-box reveal">
+      <h3>Design</h3>
+      <p>Minimal body lines with bold modern identity.</p>
+    </div>
+  </div>
+</section>
+
+<section class="models">
+  <div class="model-grid">
+    <div class="model-card reveal">
+      <img src="Image/m4.jpg">
+      <h2>M Series</h2>
+    </div>
+    <div class="model-card reveal">
+      <img src="Image/Tesla-Model3.jpg">
+      <h2>Electric Car</h2>
+    </div>
+    <div class="model-card reveal">
+      <img src="Image/Handa.jpg">
+      <h2>Family Sedans</h2>
+    </div>
+  </div>
+</section>
+
+<footer>
+  © 2026 Modern Drive — White Blue Black Experience
+</footer>
+
+<script>
+const reveals = document.querySelectorAll(".reveal");
+const navbar = document.querySelector(".navbar");
+
+window.addEventListener("scroll", () => {
+  if(window.scrollY > 100){
+    navbar.classList.add("scrolled");
+  }else{
+    navbar.classList.remove("scrolled");
+  }
+
+  reveals.forEach(el=>{
+    const top = el.getBoundingClientRect().top;
+    if(top < window.innerHeight - 100){
+      el.classList.add("active");
+    }
+  });
+});
+</script>
+
 </body>
 </html>
