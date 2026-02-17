@@ -1,0 +1,352 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px;
+    background: linear-gradient(145deg, #eef4fb 0%, #dfeaf8 100%);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #1e2d3d;
+}
+
+.order-page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.back-button a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: #1967b3;
+    background: #ffffff;
+    border: 1px solid #cfe0f1;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 600;
+}
+
+.order-header {
+    background: linear-gradient(140deg, #0e4c89 0%, #2275c2 100%);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 26px;
+    box-shadow: 0 12px 26px rgba(20, 72, 126, 0.24);
+}
+
+.order-header h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.order-header p {
+    margin: 10px 0 0;
+    opacity: 0.95;
+    font-size: 14px;
+}
+
+.focus-card,
+.order-list-card,
+.empty-state {
+    background: #ffffff;
+    border: 1px solid #d6e5f4;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(35, 79, 127, 0.08);
+}
+
+.focus-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.focus-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #0f497f;
+}
+
+.focus-header p {
+    margin: 8px 0 0;
+    color: #4e667e;
+}
+
+.stage-badge {
+    background: #eaf4ff;
+    color: #0e5fa9;
+    border: 1px solid #bdd7f2;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.detail-item {
+    background: #f7fbff;
+    border: 1px solid #d9e8f7;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.detail-item .label {
+    display: block;
+    color: #546c84;
+    font-size: 12px;
+}
+
+.detail-item strong {
+    display: block;
+    margin-top: 5px;
+    color: #143d64;
+    font-size: 14px;
+}
+
+.price-card {
+    margin-top: 14px;
+    border: 1px solid #d6e5f4;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f3f9ff;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #d7e8f8;
+}
+
+.price-row:last-child {
+    border-bottom: none;
+}
+
+.timeline {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.timeline-step {
+    border: 1px solid #dce7f1;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    background: #f8fbff;
+}
+
+.timeline-step .step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    border: 1px solid #b8cadb;
+    color: #6d8196;
+    background: #ffffff;
+}
+
+.timeline-step .step-title {
+    font-size: 12px;
+    color: #5a728b;
+    font-weight: 600;
+}
+
+.timeline-step.active {
+    border-color: #4f97d6;
+    background: #e9f4ff;
+}
+
+.timeline-step.active .step-number {
+    background: #2577c4;
+    color: #ffffff;
+    border-color: #2577c4;
+}
+
+.timeline-step.active .step-title {
+    color: #0f5ba1;
+}
+
+.timeline-step.completed {
+    border-color: #65a673;
+    background: #eef9f1;
+}
+
+.timeline-step.completed .step-number {
+    background: #2f8a44;
+    color: #ffffff;
+    border-color: #2f8a44;
+}
+
+.timeline-step.completed .step-title {
+    color: #2f7d41;
+}
+
+.status-panel {
+    margin-top: 16px;
+}
+
+.status-message {
+    margin: 0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.status-message.error {
+    background: #ffe9e9;
+    border: 1px solid #f1b3b3;
+    color: #b53232;
+}
+
+.status-message.success {
+    background: #e8f8eb;
+    border: 1px solid #b8dfc1;
+    color: #2f7d41;
+}
+
+.btn-primary {
+    border: none;
+    border-radius: 10px;
+    background: #1c71bc;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #0e5b9e;
+}
+
+.order-list-card h3 {
+    margin: 0 0 12px;
+    color: #104976;
+}
+
+.order-list {
+    display: grid;
+    gap: 10px;
+}
+
+.order-item {
+    border: 1px solid #d7e5f3;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    text-decoration: none;
+    color: #2a4057;
+    background: #f9fcff;
+    transition: 0.2s ease;
+}
+
+.order-item:hover {
+    border-color: #5e9ed7;
+    background: #eef6ff;
+}
+
+.order-item.active {
+    border-color: #2f7dc7;
+    background: #e8f2fd;
+}
+
+.order-item strong {
+    display: block;
+    font-size: 14px;
+}
+
+.order-item small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #5c768f;
+}
+
+.order-item span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #326e9e;
+    white-space: nowrap;
+}
+
+.empty-state h2 {
+    margin: 0;
+    color: #145285;
+}
+
+.empty-state p {
+    margin: 10px 0 16px;
+    color: #566f87;
+}
+
+.empty-state a {
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 10px;
+    background: #1c71bc;
+    color: #ffffff;
+    padding: 10px 14px;
+    font-weight: 700;
+}
+
+.empty-list {
+    margin: 0;
+    color: #627c95;
+    font-size: 14px;
+}
+
+@media (max-width: 900px) {
+    body {
+        padding: 14px;
+    }
+
+    .details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .timeline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .focus-header {
+        flex-direction: column;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .timeline {
+        grid-template-columns: 1fr;
+    }
+
+    .order-item {
+        flex-direction: column;
+    }
+}

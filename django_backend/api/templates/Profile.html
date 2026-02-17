@@ -1,322 +1,106 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - แก้ไขข้อมูลส่วนตัว</title>
-    <link rel="stylesheet" href="../Env/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../Env/css/style.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: linear-gradient(135deg, #f5f5f5 0%, #e8f4f8 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .profile-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(13, 71, 161, 0.15);
-            max-width: 600px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .profile-header {
-            background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
-        }
-
-        .profile-header h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .profile-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .profile-content {
-            padding: 40px;
-        }
-
-        .profile-section {
-            margin-bottom: 30px;
-        }
-
-        .profile-section h3 {
-            color: #0d47a1;
-            font-size: 18px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e3f2fd;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #0d47a1;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #90caf9;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #1976d2;
-            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-        }
-
-        .form-group input:disabled {
-            background: #f5f5f5;
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        .input-info {
-            font-size: 12px;
-            color: #999;
-            margin-top: 5px;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 25px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-cancel {
-            background: #e0e0e0;
-            color: #666;
-        }
-
-        .btn-cancel:hover {
-            background: #bdbdbd;
-        }
-
-        .btn-save {
-            background: #1976d2;
-            color: white;
-        }
-
-        .btn-save:hover {
-            background: #0d47a1;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(13, 71, 161, 0.3);
-        }
-
-        .btn-save:disabled {
-            background: #999;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .success-message {
-            background: #c8e6c9;
-            color: #2e7d32;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #2e7d32;
-            display: none;
-        }
-
-        .error-message {
-            background: #ffcccc;
-            color: #c62828;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #c62828;
-            display: none;
-        }
-
-        .divider {
-            height: 1px;
-            background: #e0e0e0;
-            margin: 30px 0;
-        }
-
-        .back-button {
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .back-button a {
-            color: #1976d2;
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .back-button a:hover {
-            color: #0d47a1;
-            gap: 12px;
-        }
-
-        @media (max-width: 600px) {
-            .profile-container {
-                border-radius: 0;
-            }
-
-            .profile-header {
-                padding: 30px 20px;
-            }
-
-            .profile-header h1 {
-                font-size: 24px;
-            }
-
-            .profile-content {
-                padding: 20px;
-            }
-
-            .form-actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-        }
-    </style>
+    <title>Profile Settings</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/profile.css' %}">
 </head>
 <body>
     <div class="profile-container">
-        <!-- HEADER -->
         <div class="profile-header">
-            <h1>👤 โปรไฟล์ของฉัน</h1>
-            <p>แก้ไขข้อมูลส่วนตัวของคุณ</p>
+            <h1>Profile Settings</h1>
+            <p>Update your phone number and change password</p>
         </div>
 
-        <!-- CONTENT -->
         <div class="profile-content">
             <div class="back-button">
-                <a href="Booking.html">← กลับไปยังการจอง</a>
+                <a href="{% url 'booking' %}">Back to Booking</a>
             </div>
 
-            <div class="success-message" id="successMessage">
-                ✅ บันทึกข้อมูลสำเร็จ!
-            </div>
+            <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage"></div>
 
-            <div class="error-message" id="errorMessage">
-                ❌ เกิดข้อผิดพลาด กรุณาลองใหม่
-            </div>
-
-            <!-- PERSONAL INFORMATION SECTION -->
-            <form id="profileForm">
+            <form
+                id="profileForm"
+                data-update-phone-url="{% url 'profile_update_phone' %}"
+                data-change-password-url="{% url 'profile_change_password' %}"
+            >
+                {% csrf_token %}
                 <div class="profile-section">
-                    <h3>📋 ข้อมูลส่วนตัว</h3>
+                    <h3>Personal Information</h3>
 
                     <div class="form-group">
-                        <label for="username">ชื่อผู้ใช้</label>
-                        <input type="text" id="username" disabled>
-                        <div class="input-info">ชื่อผู้ใช้ไม่สามารถแก้ไขได้</div>
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" value="{{ user.fullName }}" disabled>
+                        <div class="input-info">Full name is currently read-only</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="phoneNumber">เบอร์โทรศัพท์</label>
-                        <input 
-                            type="tel" 
-                            id="phoneNumber" 
-                            placeholder="ระบุเบอร์โทรศัพท์ของคุณ"
+                        <label for="username">Username</label>
+                        <input type="text" id="username" value="{{ user.username }}" disabled>
+                        <div class="input-info">Username cannot be changed</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number</label>
+                        <input
+                            type="tel"
+                            id="phoneNumber"
+                            value="{{ user.phoneNumber }}"
+                            placeholder="Enter 10-digit phone number"
                             maxlength="10"
-                            pattern="[0-9]{10}"
+                            inputmode="numeric"
                             required
                         >
-                        <div class="input-info">ระบุเบอร์โทรศัพท์ที่ถูกต้อง 10 หลัก</div>
+                        <div class="input-info">Phone number must be 10 digits</div>
                     </div>
                 </div>
 
                 <div class="divider"></div>
 
-                <!-- PASSWORD SECTION -->
                 <div class="profile-section">
-                    <h3>🔐 เปลี่ยนรหัสผ่าน</h3>
+                    <h3>Change Password</h3>
 
                     <div class="form-group">
-                        <label for="currentPassword">รหัสผ่านปัจจุบัน</label>
-                        <input 
-                            type="password" 
-                            id="currentPassword" 
-                            placeholder="ระบุรหัสผ่านปัจจุบัน"
+                        <label for="currentPassword">Current Password</label>
+                        <input
+                            type="password"
+                            id="currentPassword"
+                            placeholder="Enter current password"
                         >
                     </div>
 
                     <div class="form-group">
-                        <label for="newPassword">รหัสผ่านใหม่</label>
-                        <input 
-                            type="password" 
-                            id="newPassword" 
-                            placeholder="ระบุรหัสผ่านใหม่"
+                        <label for="newPassword">New Password</label>
+                        <input
+                            type="password"
+                            id="newPassword"
+                            placeholder="Enter new password"
                         >
-                        <div class="input-info">รหัสผ่านต้องมีความยาวอย่างน้อย 4 ตัวอักษร</div>
+                        <div class="input-info">New password must be at least 4 characters</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="confirmPassword">ยืนยันรหัสผ่านใหม่</label>
-                        <input 
-                            type="password" 
-                            id="confirmPassword" 
-                            placeholder="ยืนยันรหัสผ่านใหม่"
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Confirm new password"
                         >
                     </div>
                 </div>
 
-                <!-- ACTION BUTTONS -->
                 <div class="form-actions">
-                    <button type="button" class="btn btn-cancel" onclick="resetForm()">ยกเลิก</button>
-                    <button type="submit" class="btn btn-save">💾 บันทึกการเปลี่ยนแปลง</button>
+                    <button type="button" class="btn btn-cancel" id="resetBtn">Reset</button>
+                    <button type="submit" class="btn btn-save">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- API Integration -->
-    <script src="../Env/js/api.js"></script>
-    <script src="../Env/js/profile.js"></script>
+    <script src="{% static 'Env/js/profile.js' %}"></script>
 </body>
 </html>

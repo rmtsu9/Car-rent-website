@@ -1,50 +1,24 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="Env/css/admin.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'Env/css/admin.css' %}">
 </head>
-<script src="Env/js/admin_guard.js"></script>
 <body>
-
-<script>
-    // Check if user is logged in and is admin
-    window.addEventListener('load', () => {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        const userRole = localStorage.getItem('userRole');
-        
-        if (!isLoggedIn || userRole !== 'admin') {
-            alert('กรุณาเข้าสู่ระบบด้วยบัญชี Admin');
-            window.location.href = 'Login.html';
-        }
-    });
-
-    function logout() {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userRole');
-        sessionStorage.removeItem('role');
-        window.location.href = 'Login.html';
-    }
-</script>
-
 <div class="dashboard">
-
-    <!-- Sidebar -->
     <aside class="sidebar">
         <h2>Admin</h2>
         <ul>
             <li onclick="showSection('overview')">Overview</li>
             <li onclick="showSection('users')">Manage Users</li>
             <li onclick="showSection('activities')">Manage Activities</li>
-            <li class="logout" onclick="logout()">Logout</li>
+            <li class="logout" onclick="window.location.href='{% url 'logout' %}'">Logout</li>
         </ul>
     </aside>
 
-    <!-- Main Content -->
     <main class="content">
-
-        <!-- Overview -->
         <section id="overview" class="section active">
             <h1>Dashboard Overview</h1>
             <div class="cards">
@@ -54,7 +28,6 @@
             </div>
         </section>
 
-        <!-- Users -->
         <section id="users" class="section">
             <h1>Manage Users</h1>
             <table>
@@ -71,7 +44,6 @@
             </table>
         </section>
 
-        <!-- Activities -->
         <section id="activities" class="section">
             <h1>Manage Activities</h1>
 
@@ -86,11 +58,10 @@
             </select>
             <button>Add</button>
         </section>
-
     </main>
 </div>
 
-<script src="Env/js/api.js"></script>
-<script src="Env/js/admin.js"></script>
+<script src="{% static 'Env/js/api.js' %}"></script>
+<script src="{% static 'Env/js/admin.js' %}"></script>
 </body>
 </html>

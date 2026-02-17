@@ -1,8 +1,7 @@
 from django.db import models
 
-# user model
-class User(models.Model):
 
+class User(models.Model):
     ROLE_CHOICES = (
         ("admin", "Admin"),
         ("customer", "Customer"),
@@ -17,7 +16,7 @@ class User(models.Model):
     def __str__(self):
         return self.username
 
-# model for car
+
 class Car(models.Model):
     name = models.CharField(max_length=100)
     price_per_day = models.IntegerField()
@@ -26,13 +25,20 @@ class Car(models.Model):
     def __str__(self):
         return self.name
 
-# model for booking
-class Booking(models.Model):
 
+class Booking(models.Model):
     STATUS_CHOICES = (
-        ("pending", "รออนุมัติ"),
-        ("approved", "อนุมัติแล้ว"),
-        ("rejected", "ปฏิเสธ"),
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    )
+
+    ORDER_STAGE_CHOICES = (
+        ("awaiting_contact", "Waiting for callback"),
+        ("awaiting_deposit", "Pay 30% deposit"),
+        ("awaiting_handover", "Waiting for pickup or delivery"),
+        ("awaiting_full_payment", "Pay full amount"),
+        ("completed", "Completed"),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -44,7 +50,11 @@ class Booking(models.Model):
     pickup_type = models.CharField(max_length=20)
     total_price = models.IntegerField(default=0)
     contact_number = models.CharField(max_length=15)
-    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    order_stage = models.CharField(max_length=30, choices=ORDER_STAGE_CHOICES, default="awaiting_contact")
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     @property
     def deposit(self):
         return int(self.total_price * 0.30)
@@ -52,8 +62,3 @@ class Booking(models.Model):
     @property
     def remaining_amount(self):
         return self.total_price - self.deposit
-
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-

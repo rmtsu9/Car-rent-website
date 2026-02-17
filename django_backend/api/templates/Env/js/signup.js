@@ -1,24 +1,46 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("loginForm");
-    const identifierInput = document.getElementById("username");
+    const form = document.getElementById("signupForm");
+    const fullNameInput = document.getElementById("fullName");
+    const phoneInput = document.getElementById("phoneNumber");
+    const usernameInput = document.getElementById("username");
     const passwordInput = document.getElementById("password");
 
-    if (form && identifierInput && passwordInput) {
+    if (phoneInput) {
+        phoneInput.addEventListener("input", () => {
+            phoneInput.value = phoneInput.value.replace(/\D/g, "").slice(0, 10);
+        });
+    }
+
+    if (form && fullNameInput && phoneInput && usernameInput && passwordInput) {
         form.addEventListener("submit", (event) => {
-            const identifier = (identifierInput.value || "").trim();
+            const fullName = (fullNameInput.value || "").trim();
+            const phone = (phoneInput.value || "").trim();
+            const username = (usernameInput.value || "").trim();
             const password = (passwordInput.value || "").trim();
 
-            if (!identifier || !password) {
+            if (!fullName || !phone || !username || !password) {
                 event.preventDefault();
-                window.alert("Please fill username or phone number and password.");
+                window.alert("Please fill all required fields.");
+                return;
+            }
+
+            if (!/^\d{10}$/.test(phone)) {
+                event.preventDefault();
+                window.alert("Phone number must be exactly 10 digits.");
+                return;
+            }
+
+            if (password.length < 4) {
+                event.preventDefault();
+                window.alert("Password must be at least 4 characters.");
             }
         });
     }
 
     initSlider([
-        "Image/porsche.jpg",
-        "Image/GR86.jpg",
         "Image/GLS.jpg",
+        "Image/Handa.jpg",
+        "Image/GR86.jpg",
     ]);
 });
 

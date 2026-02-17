@@ -1,162 +1,137 @@
-/**
- * User Profile Management
- * Handles profile updates, password changes, and data persistence
- */
-
-// Check if user is logged in
-window.addEventListener('load', () => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
-        alert('กรุณาเข้าสู่ระบบก่อน');
-        window.location.href = 'Login.html';
-    }
-    loadUserProfile();
-});
-
-// Load user profile data
-async function loadUserProfile() {
-    const username = localStorage.getItem('username') || localStorage.getItem('userRole');
-    const userRole = localStorage.getItem('userRole');
-
-    // Set username field
-    const usernameField = document.getElementById('username');
-    if (usernameField) {
-        usernameField.value = username || (userRole === 'admin' ? 'admin' : 'user');
-        usernameField.disabled = true;
-    }
-
-    // Try to load profile from API
-    try {
-        const response = await userAPI.getProfile();
-        if (response.success && response.data) {
-            const phoneField = document.getElementById('phoneNumber');
-            if (phoneField && response.data.phoneNumber) {
-                phoneField.value = response.data.phoneNumber;
-            }
-        } else {
-            // Load from localStorage
-            const savedPhone = localStorage.getItem('userPhoneNumber');
-            if (savedPhone && document.getElementById('phoneNumber')) {
-                document.getElementById('phoneNumber').value = savedPhone;
-            }
-        }
-    } catch (error) {
-        console.log('API not available, loading from localStorage');
-        const savedPhone = localStorage.getItem('userPhoneNumber');
-        if (savedPhone && document.getElementById('phoneNumber')) {
-            document.getElementById('phoneNumber').value = savedPhone;
-        }
-    }
-}
-
-// Handle form submission
-document.getElementById('profileForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const phoneNumber = document.getElementById('phoneNumber').value;
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-
-    const errorMsg = document.getElementById('errorMessage');
-    const successMsg = document.getElementById('successMessage');
-
-    // Reset messages
-    errorMsg.style.display = 'none';
-    successMsg.style.display = 'none';
-
-    // Validate phone number
-    if (!phoneNumber || phoneNumber.length !== 10 || isNaN(phoneNumber)) {
-        showError('เบอร์โทรศัพท์ต้องเป็น 10 หลัก');
+(function () {
+    const form = document.getElementById("profileForm");
+    if (!form) {
         return;
     }
 
-    // Validate password change if user entered password fields
-    if (newPassword || currentPassword || confirmPassword) {
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            showError('กรุณากรอกรหัสผ่านให้ครบทั้งหมด');
-            return;
-        }
+    const phoneInput = document.getElementById("phoneNumber");
+    const currentPasswordInput = document.getElementById("currentPassword");
+    const newPasswordInput = document.getElementById("newPassword");
+    const confirmPasswordInput = document.getElementById("confirmPassword");
+    const successBox = document.getElementById("successMessage");
+    const errorBox = document.getElementById("errorMessage");
+    const resetBtn = document.getElementById("resetBtn");
 
-        if (newPassword.length < 4) {
-            showError('รหัสผ่านใหม่ต้องมากกว่า 4 ตัวอักษร');
-            return;
-        }
+    let initialPhone = phoneInput.value;
 
-        if (newPassword !== confirmPassword) {
-            showError('รหัสผ่านไม่ตรงกัน');
-            return;
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(";") : [];
+        for (let i = 0; i < cookies.length; i += 1) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(`${name}=`)) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
         }
+        return "";
+    }
 
-        // Update password via API
+    function hideMessages() {
+        successBox.style.display = "none";
+        errorBox.style.display = "none";
+        successBox.textContent = "";
+        errorBox.textContent = "";
+    }
+
+    function showError(message) {
+        errorBox.textContent = `Error: ${message}`;
+        errorBox.style.display = "block";
+        successBox.style.display = "none";
+    }
+
+    function showSuccess(message) {
+        successBox.textContent = `Success: ${message}`;
+        successBox.style.display = "block";
+        errorBox.style.display = "none";
+    }
+
+    async function postForm(url, payload) {
+        const formData = new URLSearchParams(payload);
+        const response = await fetch(url, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: formData.toString(),
+        });
+
+        let data = {};
         try {
-            const response = await userAPI.changePassword(currentPassword, newPassword);
-            if (response.success) {
-                localStorage.setItem('userPassword', newPassword);
-                showSuccess('รหัสผ่านเปลี่ยนแปลงสำเร็จแล้ว!');
-            } else {
-                showError('รหัสผ่านปัจจุบันไม่ถูกต้อง');
-                return;
-            }
+            data = await response.json();
         } catch (error) {
-            console.log('API not available, using local password change');
-            const savedPassword = localStorage.getItem('userPassword') || '1234';
-            if (currentPassword !== savedPassword) {
-                showError('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            data = { success: false, message: "Unexpected server response" };
+        }
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Request failed");
+        }
+
+        return data;
+    }
+
+    function clearPasswordFields() {
+        currentPasswordInput.value = "";
+        newPasswordInput.value = "";
+        confirmPasswordInput.value = "";
+    }
+
+    resetBtn.addEventListener("click", () => {
+        phoneInput.value = initialPhone;
+        clearPasswordFields();
+        hideMessages();
+    });
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        hideMessages();
+
+        const phoneNumber = phoneInput.value.trim();
+        const currentPassword = currentPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        if (!/^\d{10}$/.test(phoneNumber)) {
+            showError("Phone number must be exactly 10 digits");
+            return;
+        }
+
+        const hasPasswordInput = Boolean(currentPassword || newPassword || confirmPassword);
+        if (hasPasswordInput) {
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showError("Please fill all password fields");
                 return;
             }
-            localStorage.setItem('userPassword', newPassword);
-            showSuccess('รหัสผ่านเปลี่ยนแปลงสำเร็จแล้ว!');
-        }
-    }
 
-    // Update profile via API
-    try {
-        const response = await userAPI.updateProfile(phoneNumber);
-        if (response.success) {
-            localStorage.setItem('userPhoneNumber', phoneNumber);
-            if (!newPassword) {
-                showSuccess('ข้อมูลของคุณบันทึกสำเร็จแล้ว!');
+            if (newPassword.length < 4) {
+                showError("New password must be at least 4 characters");
+                return;
             }
-        } else {
-            // Fallback to local storage
-            localStorage.setItem('userPhoneNumber', phoneNumber);
-            if (!newPassword) {
-                showSuccess('ข้อมูลของคุณบันทึกสำเร็จแล้ว!');
+
+            if (newPassword !== confirmPassword) {
+                showError("New password and confirm password do not match");
+                return;
             }
         }
-    } catch (error) {
-        console.log('API not available, saving locally');
-        localStorage.setItem('userPhoneNumber', phoneNumber);
-        if (!newPassword) {
-            showSuccess('ข้อมูลของคุณบันทึกสำเร็จแล้ว!');
+
+        try {
+            await postForm(form.dataset.updatePhoneUrl, {
+                phone_number: phoneNumber,
+            });
+
+            if (hasPasswordInput) {
+                await postForm(form.dataset.changePasswordUrl, {
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    confirm_password: confirmPassword,
+                });
+            }
+
+            initialPhone = phoneNumber;
+            clearPasswordFields();
+            showSuccess(hasPasswordInput ? "Phone number and password updated" : "Phone number updated");
+        } catch (error) {
+            showError(error.message || "Failed to update profile");
         }
-    }
-
-    // Clear password fields
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-
-    // Reset after 3 seconds
-    setTimeout(() => {
-        successMsg.style.display = 'none';
-    }, 3000);
-});
-
-function showError(message) {
-    const errorMsg = document.getElementById('errorMessage');
-    errorMsg.textContent = '❌ ' + message;
-    errorMsg.style.display = 'block';
-}
-
-function showSuccess(message) {
-    const successMsg = document.getElementById('successMessage');
-    successMsg.textContent = '✅ ' + message;
-    successMsg.style.display = 'block';
-}
-
-function resetForm() {
-    document.getElementById('profileForm').reset();
-    loadUserProfile();
-}
+    });
+})();

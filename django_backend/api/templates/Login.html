@@ -1,56 +1,84 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="Env\css\style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Modern Drive</title>
+<link rel="stylesheet" href="{% static 'Env/css/login.css' %}">
 </head>
 <body>
-
 <div class="container">
-
-    <!-- LEFT -->
     <div class="left-panel">
-        <div class="logo">🚀</div>
-        <h2>Welcome to</h2>
-        <h1>Mini Project</h1>
-        <p>Student System</p>
+        <div class="slide slide-1"></div>
+        <div class="slide slide-2"></div>
+        <div class="slider-overlay"></div>
+        <div class="slider-content">
+            <h1 class="headline">Engineered for Excellence</h1>
+            <p class="tagline">Precision. Power. Modern Drive.</p>
+        </div>
+        <div class="slider-dots"></div>
     </div>
 
-    <!-- RIGHT -->
     <div class="right-panel">
-        <h2>Sign In</h2>
+        <div class="form-box">
+            <div class="brand">MODERN DRIVE</div>
 
-        <form id="loginForm" method="post">
+            <h2>Welcome Back</h2>
+            <div class="sub-text">Please login to continue.</div>
 
-            <input 
-                type="text" 
-                id="username"
-                name="username"
-                placeholder="Username"
-                required
-            >
+            <form id="loginForm" method="post" action="{% url 'login' %}">
+                {% csrf_token %}
 
-            <input 
-                type="password" 
-                id="password"
-                placeholder="Password"
-                required
-            >
+                {% if error %}
+                    <div class="form-message error-message">{{ error }}</div>
+                {% endif %}
 
-            <button type="submit">Login</button>
+                {% if registered %}
+                    <div class="form-message success-message">Account created successfully. Please login.</div>
+                {% endif %}
 
-            <button type="button" class="signup-btn" onclick="goSignup()">
-                Sign Up
-            </button>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Username or Phone Number"
+                    value="{{ identifier|default:'' }}"
+                    autocomplete="username"
+                    required
+                >
 
-        </form>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="submit" class="login-btn">Login</button>
+                <div class="divider">OR</div>
+                <button
+                    type="button"
+                    class="signup-btn"
+                    onclick="window.location.href='{% url 'signup' %}'"
+                >
+                    Create Account
+                </button>
+                <div class="line"></div>
+            </form>
+        </div>
     </div>
-
 </div>
 
-<!-- API Integration -->
-<script src="Env\js\api.js"></script>
-<script src="Env\js\login.js"></script>
+<footer>
+    &copy; 2026 Modern Drive Marketplace |
+    <a href="#">Legal Notice</a>
+    <a href="#">Privacy Policy</a>
+    <a href="#">Cookie Policy</a>
+</footer>
+<script src="{% static 'Env/js/login.js' %}"></script>
 </body>
 </html>
+
