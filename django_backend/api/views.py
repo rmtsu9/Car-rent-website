@@ -379,14 +379,15 @@ def admin_page(request):
 
 def model_page(request):
     user = request.session.get("user")
-
-    if not user:
-        return redirect("login")
-
-    if user.get("role") != "admin":
-        return HttpResponse("Unauthorized", status=401)
-
-    return render(request, "model.html", {"user": user})
+    is_admin = bool(user and user.get("role") == "admin")
+    return render(
+        request,
+        "model.html",
+        {
+            "user": user,
+            "is_admin": is_admin,
+        },
+    )
 
 
 # Approve booking view
@@ -729,6 +730,23 @@ def admin_admin_detail_api(request, user_id):
         return JsonResponse({"success": True})
 
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+
+def public_cars_api(request):
+    if request.method != "GET":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    keyword = _clean_text(request.GET.get("q"))
+    cars = Car.objects.filter(is_active=True).prefetch_related("images").order_by("id")
+
+    if keyword:
+        cars = cars.filter(
+            Q(name__icontains=keyword)
+            | Q(car_type__icontains=keyword)
+            | Q(fuel_type__icontains=keyword)
+        )
+
+    return JsonResponse({"success": True, "data": [_serialize_car(car) for car in cars]})
 
 
 def admin_cars_api(request):

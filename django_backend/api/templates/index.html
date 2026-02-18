@@ -278,10 +278,10 @@ footer{
 <header class="navbar">
   <div class="logo">MODERN DRIVE</div>
     <nav>
-        <a href="#">MODEL</a>
-        <a href="#">SIGN IN</a>
-        <a href="#">LOGIN</a>
-        <a href="#">CONTACT</a>
+        <a href="{% url 'model' %}">MODEL</a>
+        <a href="{% url 'signup' %}">SIGN UP</a>
+        <a href="{% url 'login' %}">LOGIN</a>
+        <a href="#contact">CONTACT</a>
     </nav>
 </header>
 
@@ -289,7 +289,7 @@ footer{
   <div class="hero-content reveal">
     <h1>Precision in Motion</h1>
     <p>White. Blue. Black. Balanced.</p>
-    <a href="#" class="btn">Explore Models</a>
+    <a href="{% url 'model' %}" class="btn">Explore Models</a>
   </div>
 </section>
 
@@ -328,7 +328,7 @@ footer{
   </div>
 </section>
 
-<footer>
+<footer id="contact">
   © 2026 Modern Drive — White Blue Black Experience
 </footer>
 

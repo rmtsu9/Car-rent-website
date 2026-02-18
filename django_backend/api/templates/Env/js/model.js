@@ -4,8 +4,10 @@
         return;
     }
 
+    const isAdmin = app.dataset.isAdmin === "true";
     const urls = {
-        cars: app.dataset.carsUrl,
+        adminCars: app.dataset.adminCarsUrl,
+        publicCars: app.dataset.publicCarsUrl,
         admin: app.dataset.adminUrl,
     };
 
@@ -47,16 +49,21 @@
         return payload.data ?? payload;
     }
 
+    function carsCollectionUrl(query = "") {
+        const base = isAdmin ? urls.adminCars : urls.publicCars;
+        return query ? `${base}?q=${encodeURIComponent(query)}` : base;
+    }
+
     function carDetailUrl(carId) {
-        return `${urls.cars}${carId}/`;
+        return `${urls.adminCars}${carId}/`;
     }
 
     function carImageUrl(carId) {
-        return `${urls.cars}${carId}/images/`;
+        return `${urls.adminCars}${carId}/images/`;
     }
 
     function carImageDetailUrl(carId, imageId) {
-        return `${urls.cars}${carId}/images/${imageId}/`;
+        return `${urls.adminCars}${carId}/images/${imageId}/`;
     }
 
     function formatMoney(value) {
@@ -78,6 +85,10 @@
     }
 
     function resetCarForm() {
+        if (!isAdmin) {
+            return;
+        }
+
         document.getElementById("carId").value = "";
         document.getElementById("carName").value = "";
         document.getElementById("carPricePerDay").value = "";
@@ -93,6 +104,10 @@
     }
 
     function fillCarForm(car) {
+        if (!isAdmin) {
+            return;
+        }
+
         document.getElementById("carId").value = car.id;
         document.getElementById("carName").value = car.name;
         document.getElementById("carPricePerDay").value = car.price_per_day;
@@ -107,35 +122,64 @@
         document.getElementById("carImageCaption").value = "";
     }
 
+    function renderImages(car) {
+        if (!car.images.length) {
+            return `<div class="empty-state">No images</div>`;
+        }
+
+        return car.images
+            .map((image) => {
+                const preview = resolveImageUrl(image.image_url);
+                const actions = isAdmin
+                    ? `
+                        <div class="image-actions">
+                            <button type="button" class="btn-secondary" data-action="edit-image" data-car-id="${car.id}" data-image-id="${image.id}">Edit</button>
+                            <button type="button" class="btn-danger" data-action="delete-image" data-car-id="${car.id}" data-image-id="${image.id}">Delete</button>
+                        </div>
+                    `
+                    : "";
+
+                return `
+                    <div class="image-row">
+                        <img src="${preview}" alt="${image.caption || car.name}" loading="lazy">
+                        <div class="image-info">
+                            <strong>${image.caption || "-"}</strong>
+                            <small>${image.image_url}</small>
+                        </div>
+                        ${actions}
+                    </div>
+                `;
+            })
+            .join("");
+    }
+
     function renderCars() {
         const container = document.getElementById("carsContainer");
         if (!state.cars.length) {
-            container.innerHTML = `<div class="empty-state">ไม่พบข้อมูลรถ</div>`;
+            container.innerHTML = `<div class="empty-state">No cars found</div>`;
             return;
         }
 
         container.innerHTML = state.cars
             .map((car) => {
-                const imagesHtml = car.images.length
-                    ? car.images
-                          .map((image) => {
-                              const preview = resolveImageUrl(image.image_url);
-                              return `
-                                <div class="image-row">
-                                    <img src="${preview}" alt="${image.caption || car.name}" loading="lazy">
-                                    <div class="image-info">
-                                        <strong>${image.caption || "-"}</strong>
-                                        <small>${image.image_url}</small>
-                                    </div>
-                                    <div class="image-actions">
-                                        <button type="button" class="btn-secondary" data-action="edit-image" data-car-id="${car.id}" data-image-id="${image.id}">Edit</button>
-                                        <button type="button" class="btn-danger" data-action="delete-image" data-car-id="${car.id}" data-image-id="${image.id}">Delete</button>
-                                    </div>
-                                </div>
-                            `;
-                          })
-                          .join("")
-                    : `<div class="empty-state">ยังไม่มีรูปรถ</div>`;
+                const adminActions = isAdmin
+                    ? `
+                        <div class="car-actions">
+                            <button type="button" class="btn-secondary" data-action="edit-car" data-car-id="${car.id}">Edit Car</button>
+                            <button type="button" class="btn-danger" data-action="delete-car" data-car-id="${car.id}">Delete Car</button>
+                        </div>
+                    `
+                    : "";
+
+                const adminImageForm = isAdmin
+                    ? `
+                        <form class="add-image-form" data-car-id="${car.id}">
+                            <input type="text" name="image_url" placeholder="Add image URL or path" required>
+                            <input type="text" name="caption" placeholder="Image caption">
+                            <button type="submit" class="btn-primary">Add Image</button>
+                        </form>
+                    `
+                    : "";
 
                 return `
                     <article class="car-card">
@@ -144,30 +188,23 @@
                                 <h3>${car.name}</h3>
                                 <span class="status-badge ${car.is_active ? "active" : "inactive"}">${car.is_active ? "Active" : "Inactive"}</span>
                             </div>
-                            <div class="car-actions">
-                                <button type="button" class="btn-secondary" data-action="edit-car" data-car-id="${car.id}">Edit Car</button>
-                                <button type="button" class="btn-danger" data-action="delete-car" data-car-id="${car.id}">Delete Car</button>
-                            </div>
+                            ${adminActions}
                         </div>
 
                         <div class="meta-grid">
                             <div class="meta-item"><span>Price</span><strong>${formatMoney(car.price_per_day)}</strong></div>
-                            <div class="meta-item"><span>Fuel Type</span><strong>${car.fuel_type}</strong></div>
-                            <div class="meta-item"><span>Consumption</span><strong>${car.fuel_consumption}</strong></div>
-                            <div class="meta-item"><span>Type</span><strong>${car.car_type}</strong></div>
-                            <div class="meta-item"><span>Seat</span><strong>${car.seat_capacity}</strong></div>
-                            <div class="meta-item"><span>Engine CC</span><strong>${car.engine_cc}</strong></div>
-                            <div class="meta-item"><span>Horsepower</span><strong>${car.horsepower} HP</strong></div>
+                            <div class="meta-item"><span>Fuel Type</span><strong>${car.fuel_type || "-"}</strong></div>
+                            <div class="meta-item"><span>Consumption</span><strong>${car.fuel_consumption || "-"}</strong></div>
+                            <div class="meta-item"><span>Type</span><strong>${car.car_type || "-"}</strong></div>
+                            <div class="meta-item"><span>Seat</span><strong>${car.seat_capacity || "-"}</strong></div>
+                            <div class="meta-item"><span>Engine CC</span><strong>${car.engine_cc || "-"}</strong></div>
+                            <div class="meta-item"><span>Horsepower</span><strong>${car.horsepower || "-"} HP</strong></div>
                         </div>
 
                         <div class="images-block">
-                            <h4>รูปภาพ (${car.images.length})</h4>
-                            <div class="image-list">${imagesHtml}</div>
-                            <form class="add-image-form" data-car-id="${car.id}">
-                                <input type="text" name="image_url" placeholder="เพิ่มรูป: URL หรือ path" required>
-                                <input type="text" name="caption" placeholder="คำอธิบายรูป">
-                                <button type="submit" class="btn-primary">Add Image</button>
-                            </form>
+                            <h4>Images (${car.images.length})</h4>
+                            <div class="image-list">${renderImages(car)}</div>
+                            ${adminImageForm}
                         </div>
                     </article>
                 `;
@@ -176,14 +213,16 @@
     }
 
     async function loadCars(query = "") {
-        const endpoint = query ? `${urls.cars}?q=${encodeURIComponent(query)}` : urls.cars;
-        const data = await apiRequest(endpoint);
+        const data = await apiRequest(carsCollectionUrl(query));
         state.cars = data;
         renderCars();
     }
 
     async function saveCar(event) {
         event.preventDefault();
+        if (!isAdmin) {
+            return;
+        }
 
         const carId = document.getElementById("carId").value;
         const payload = {
@@ -208,7 +247,7 @@
             if (carId) {
                 await apiRequest(carDetailUrl(carId), "PUT", payload);
             } else {
-                await apiRequest(urls.cars, "POST", payload);
+                await apiRequest(urls.adminCars, "POST", payload);
             }
             resetCarForm();
             await loadCars(document.getElementById("carSearchInput").value.trim());
@@ -218,9 +257,14 @@
     }
 
     async function deleteCar(carId) {
-        if (!window.confirm("ลบรถคันนี้ใช่หรือไม่?")) {
+        if (!isAdmin) {
             return;
         }
+
+        if (!window.confirm("Delete this car?")) {
+            return;
+        }
+
         try {
             await apiRequest(carDetailUrl(carId), "DELETE");
             await loadCars(document.getElementById("carSearchInput").value.trim());
@@ -230,6 +274,10 @@
     }
 
     async function addImage(formElement) {
+        if (!isAdmin) {
+            return;
+        }
+
         const carId = formElement.dataset.carId;
         const imageUrlField = formElement.querySelector("input[name='image_url']");
         const captionField = formElement.querySelector("input[name='caption']");
@@ -254,6 +302,10 @@
     }
 
     async function editImage(carId, imageId) {
+        if (!isAdmin) {
+            return;
+        }
+
         const selectedCar = state.cars.find((car) => String(car.id) === String(carId));
         if (!selectedCar) {
             return;
@@ -263,11 +315,11 @@
             return;
         }
 
-        const nextUrl = window.prompt("แก้ไข URL รูป", selectedImage.image_url);
+        const nextUrl = window.prompt("Edit image URL", selectedImage.image_url);
         if (nextUrl === null) {
             return;
         }
-        const nextCaption = window.prompt("แก้ไขคำอธิบายรูป", selectedImage.caption || "");
+        const nextCaption = window.prompt("Edit image caption", selectedImage.caption || "");
         if (nextCaption === null) {
             return;
         }
@@ -284,7 +336,11 @@
     }
 
     async function deleteImage(carId, imageId) {
-        if (!window.confirm("ลบรูปนี้ใช่หรือไม่?")) {
+        if (!isAdmin) {
+            return;
+        }
+
+        if (!window.confirm("Delete this image?")) {
             return;
         }
 
@@ -297,24 +353,32 @@
     }
 
     function bindEvents() {
-        document.getElementById("backAdminBtn").addEventListener("click", () => {
-            window.location.href = urls.admin;
-        });
-
-        document.getElementById("carForm").addEventListener("submit", saveCar);
-        document.getElementById("resetCarFormBtn").addEventListener("click", resetCarForm);
-
+        const searchInput = document.getElementById("carSearchInput");
         document.getElementById("searchCarsBtn").addEventListener("click", () => {
-            loadCars(document.getElementById("carSearchInput").value.trim()).catch((error) => alert(error.message));
+            loadCars(searchInput.value.trim()).catch((error) => alert(error.message));
         });
 
-        document.getElementById("carSearchInput").addEventListener("keydown", (event) => {
+        searchInput.addEventListener("keydown", (event) => {
             if (event.key !== "Enter") {
                 return;
             }
             event.preventDefault();
             loadCars(event.target.value.trim()).catch((error) => alert(error.message));
         });
+
+        if (!isAdmin) {
+            return;
+        }
+
+        const backAdminBtn = document.getElementById("backAdminBtn");
+        if (backAdminBtn) {
+            backAdminBtn.addEventListener("click", () => {
+                window.location.href = urls.admin;
+            });
+        }
+
+        document.getElementById("carForm").addEventListener("submit", saveCar);
+        document.getElementById("resetCarFormBtn").addEventListener("click", resetCarForm);
 
         document.getElementById("carsContainer").addEventListener("click", (event) => {
             const button = event.target.closest("button[data-action]");

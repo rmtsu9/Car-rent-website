@@ -18,6 +18,7 @@ urlpatterns = [
     path('admin/api/cars/<int:car_id>/images/<int:image_id>/', views.admin_car_image_detail_api, name='admin_car_image_detail_api'),
     path('admin/api/orders/', views.admin_orders_api, name='admin_orders_api'),
     path('admin/api/history/', views.admin_history_api, name='admin_history_api'),
+    path('cars/public/', views.public_cars_api, name='public_cars_api'),
     path('booking/availability/', views.booking_availability, name='booking_availability'),
     path('booking/', views.booking, name='booking'),
     path('order/', views.order, name='order'),

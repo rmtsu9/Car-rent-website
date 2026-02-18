@@ -47,10 +47,28 @@ body {
     color: var(--muted);
 }
 
+.top-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.viewer-note {
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--muted);
+}
+
 .layout {
     display: grid;
     grid-template-columns: minmax(310px, 420px) minmax(0, 1fr);
     gap: 14px;
+}
+
+.layout.public-layout {
+    grid-template-columns: 1fr;
 }
 
 .card {
@@ -134,6 +152,10 @@ input:focus {
     background: #f3f6fb;
     border-color: var(--line);
     color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-secondary:hover {

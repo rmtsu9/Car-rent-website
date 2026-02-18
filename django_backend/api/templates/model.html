@@ -1,101 +1,124 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Management</title>
+    <title>Car Models</title>
     <link rel="stylesheet" href="{% static 'Env/css/model.css' %}">
 </head>
 <body>
     <div
         class="model-app"
         id="modelApp"
-        data-cars-url="{% url 'admin_cars_api' %}"
+        data-admin-cars-url="{% url 'admin_cars_api' %}"
+        data-public-cars-url="{% url 'public_cars_api' %}"
         data-admin-url="{% url 'admin' %}"
+        data-login-url="{% url 'login' %}"
+        data-is-admin="{{ is_admin|yesno:'true,false' }}"
     >
         <header class="topbar">
             <div>
-                <h1>Car Model Management</h1>
-                <p>เพิ่ม แก้ไข ลบ ค้นหา และจัดการรูปรถยนต์</p>
+                <h1>{% if is_admin %}Car Model Management{% else %}All Car Models{% endif %}</h1>
+                <p>
+                    {% if is_admin %}
+                        Add, edit, delete, and search cars with full vehicle details and images.
+                    {% else %}
+                        Browse available car models. Admin-only controls are hidden.
+                    {% endif %}
+                </p>
             </div>
-            <button type="button" id="backAdminBtn" class="btn-secondary">Back to Admin</button>
+            <div class="top-actions">
+                {% if is_admin %}
+                    <button type="button" id="backAdminBtn" class="btn-secondary">Back to Admin</button>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn-secondary">Admin Login</a>
+                {% endif %}
+            </div>
         </header>
 
-        <main class="layout">
-            <section class="card">
-                <h2>Car Form</h2>
-                <form id="carForm" class="form-grid">
-                    {% csrf_token %}
-                    <input type="hidden" id="carId">
-
-                    <label>
-                        ชื่อรถ
-                        <input type="text" id="carName" required>
-                    </label>
-
-                    <label>
-                        ราคาเช่าต่อวัน (THB)
-                        <input type="number" id="carPricePerDay" min="0" required>
-                    </label>
-
-                    <label>
-                        ใช้น้ำมัน
-                        <input type="text" id="carFuelType" placeholder="เช่น เบนซิน / ดีเซล / ไฟฟ้า" required>
-                    </label>
-
-                    <label>
-                        อัตราสิ้นเปลือง
-                        <input type="text" id="carFuelConsumption" placeholder="เช่น 14 km/L" required>
-                    </label>
-
-                    <label>
-                        ประเภทรถ
-                        <input type="text" id="carType" placeholder="เช่น SUV / Sedan / Coupe" required>
-                    </label>
-
-                    <label>
-                        นั่งได้กี่ท่าน
-                        <input type="number" id="carSeatCapacity" min="1" required>
-                    </label>
-
-                    <label>
-                        ความจุเครื่องยนต์ (CC)
-                        <input type="number" id="carEngineCC" min="0" required>
-                    </label>
-
-                    <label>
-                        พละกำลัง (HP)
-                        <input type="number" id="carHorsepower" min="0" required>
-                    </label>
-
-                    <label class="checkbox-field">
-                        <input type="checkbox" id="carIsActive" checked>
-                        <span>เปิดใช้งานรถคันนี้สำหรับการจอง</span>
-                    </label>
-
-                    <label>
-                        รูปเริ่มต้น (URL หรือ path)
-                        <input type="text" id="carImageUrl" placeholder="เช่น https://example.com/car.jpg">
-                    </label>
-
-                    <label>
-                        คำอธิบายรูป
-                        <input type="text" id="carImageCaption" placeholder="เช่น ด้านหน้า">
-                    </label>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">Save Car</button>
-                        <button type="button" class="btn-secondary" id="resetCarFormBtn">Clear</button>
-                    </div>
-                </form>
+        {% if not is_admin %}
+            <section class="viewer-note">
+                Public mode is enabled. You can view and search cars without logging in.
             </section>
+        {% endif %}
+
+        <main class="layout{% if not is_admin %} public-layout{% endif %}">
+            {% if is_admin %}
+                <section class="card" id="adminFormCard">
+                    <h2>Car Form</h2>
+                    <form id="carForm" class="form-grid">
+                        {% csrf_token %}
+                        <input type="hidden" id="carId">
+
+                        <label>
+                            Car Name
+                            <input type="text" id="carName" required>
+                        </label>
+
+                        <label>
+                            Price Per Day (THB)
+                            <input type="number" id="carPricePerDay" min="0" required>
+                        </label>
+
+                        <label>
+                            Fuel Type
+                            <input type="text" id="carFuelType" placeholder="Example: Petrol, Diesel, EV" required>
+                        </label>
+
+                        <label>
+                            Fuel Consumption
+                            <input type="text" id="carFuelConsumption" placeholder="Example: 14 km/L" required>
+                        </label>
+
+                        <label>
+                            Car Type
+                            <input type="text" id="carType" placeholder="Example: SUV, Sedan, Coupe" required>
+                        </label>
+
+                        <label>
+                            Seat Capacity
+                            <input type="number" id="carSeatCapacity" min="1" required>
+                        </label>
+
+                        <label>
+                            Engine Capacity (CC)
+                            <input type="number" id="carEngineCC" min="0" required>
+                        </label>
+
+                        <label>
+                            Horsepower (HP)
+                            <input type="number" id="carHorsepower" min="0" required>
+                        </label>
+
+                        <label class="checkbox-field">
+                            <input type="checkbox" id="carIsActive" checked>
+                            <span>Enable this car for booking</span>
+                        </label>
+
+                        <label>
+                            Initial Image (URL or path)
+                            <input type="text" id="carImageUrl" placeholder="Example: https://example.com/car.jpg">
+                        </label>
+
+                        <label>
+                            Image Caption
+                            <input type="text" id="carImageCaption" placeholder="Example: Front view">
+                        </label>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Save Car</button>
+                            <button type="button" class="btn-secondary" id="resetCarFormBtn">Clear</button>
+                        </div>
+                    </form>
+                </section>
+            {% endif %}
 
             <section class="card">
                 <div class="list-head">
                     <h2>Car List</h2>
                     <div class="search-group">
-                        <input type="text" id="carSearchInput" placeholder="ค้นหาชื่อรถ / ประเภท / น้ำมัน">
+                        <input type="text" id="carSearchInput" placeholder="Search by car name, type, fuel type">
                         <button type="button" class="btn-secondary" id="searchCarsBtn">Search</button>
                     </div>
                 </div>
