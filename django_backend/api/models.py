@@ -20,10 +20,26 @@ class User(models.Model):
 class Car(models.Model):
     name = models.CharField(max_length=100)
     price_per_day = models.IntegerField()
+    fuel_type = models.CharField(max_length=50, default="")
+    fuel_consumption = models.CharField(max_length=50, default="")
+    car_type = models.CharField(max_length=50, default="")
+    seat_capacity = models.PositiveSmallIntegerField(default=4)
+    engine_cc = models.PositiveIntegerField(default=0)
+    horsepower = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
+
+
+class CarImage(models.Model):
+    car = models.ForeignKey(Car, on_delete=models.CASCADE, related_name="images")
+    image_url = models.CharField(max_length=500)
+    caption = models.CharField(max_length=100, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.car.name} image #{self.id}"
 
 
 class Booking(models.Model):

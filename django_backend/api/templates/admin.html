@@ -1,67 +1,273 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    {% load static %}
     <link rel="stylesheet" href="{% static 'Env/css/admin.css' %}">
 </head>
 <body>
-<div class="dashboard">
-    <aside class="sidebar">
-        <h2>Admin</h2>
-        <ul>
-            <li onclick="showSection('overview')">Overview</li>
-            <li onclick="showSection('users')">Manage Users</li>
-            <li onclick="showSection('activities')">Manage Activities</li>
-            <li class="logout" onclick="window.location.href='{% url 'logout' %}'">Logout</li>
-        </ul>
-    </aside>
-
-    <main class="content">
-        <section id="overview" class="section active">
-            <h1>Dashboard Overview</h1>
-            <div class="cards">
-                <div class="card">Users <span>25</span></div>
-                <div class="card">Main Activities <span>5</span></div>
-                <div class="card">Sub Activities <span>12</span></div>
+    <div
+        class="admin-layout"
+        id="adminApp"
+        data-dashboard-url="{% url 'admin_dashboard_api' %}"
+        data-users-url="{% url 'admin_users_api' %}"
+        data-admins-url="{% url 'admin_admins_api' %}"
+        data-orders-url="{% url 'admin_orders_api' %}"
+        data-history-url="{% url 'admin_history_api' %}"
+        data-model-url="{% url 'model' %}"
+    >
+        <aside class="admin-nav">
+            <div class="brand">
+                <h2>ADMIN PANEL</h2>
+                <p>Car Rental Management</p>
             </div>
-        </section>
 
-        <section id="users" class="section">
-            <h1>Manage Users</h1>
-            <table>
-                <tr>
-                    <th>Username</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                </tr>
-                <tr>
-                    <td>user01</td>
-                    <td>089xxxxxxx</td>
-                    <td>User</td>
-                </tr>
-            </table>
-        </section>
+            <nav class="nav-list">
+                <button type="button" class="nav-btn active" data-target="overview">Dashboard</button>
+                <button type="button" class="nav-btn" data-target="users">Manage Users</button>
+                <button type="button" class="nav-btn" data-target="admins">Manage Admins</button>
+                <button type="button" class="nav-btn" data-target="orders">Incoming Orders</button>
+                <button type="button" class="nav-btn" data-target="history">History</button>
+            </nav>
 
-        <section id="activities" class="section">
-            <h1>Manage Activities</h1>
+            <div class="nav-actions">
+                <button type="button" id="goModelBtn" class="btn-outline">Manage Cars (Model)</button>
+                <a href="{% url 'logout' %}" class="btn-outline danger">Logout</a>
+            </div>
 
-            <h3>Main Activity</h3>
-            <input type="text" placeholder="Main Activity Name">
-            <button>Add</button>
+            <div class="account-box">
+                <strong>{{ user.fullName }}</strong>
+                <small>@{{ user.username }}</small>
+            </div>
+        </aside>
 
-            <h3>Sub Activity</h3>
-            <input type="text" placeholder="Sub Activity Name">
-            <select>
-                <option>Main Activity 1</option>
-            </select>
-            <button>Add</button>
-        </section>
-    </main>
-</div>
+        <main class="admin-content">
+            <section id="overview" class="section active">
+                <div class="section-head">
+                    <h1>Dashboard Overview</h1>
+                    <button type="button" id="refreshDashboardBtn" class="btn-primary">Refresh</button>
+                </div>
 
-<script src="{% static 'Env/js/api.js' %}"></script>
-<script src="{% static 'Env/js/admin.js' %}"></script>
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <h3>Total Users</h3>
+                        <p id="statTotalUsers">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Total Admins</h3>
+                        <p id="statTotalAdmins">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Total Cars</h3>
+                        <p id="statTotalCars">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Active Cars</h3>
+                        <p id="statActiveCars">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Incoming Orders</h3>
+                        <p id="statIncomingOrders">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Pending Orders</h3>
+                        <p id="statPendingOrders">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Completed Orders</h3>
+                        <p id="statCompletedOrders">0</p>
+                    </article>
+                    <article class="stat-card">
+                        <h3>Revenue (Completed)</h3>
+                        <p id="statRevenue">0 THB</p>
+                    </article>
+                </div>
+            </section>
+
+            <section id="users" class="section">
+                <div class="section-head">
+                    <h1>Manage Users</h1>
+                </div>
+
+                <div class="panel-grid">
+                    <div class="card">
+                        <h2>User Form</h2>
+                        <form id="userForm" class="form-grid">
+                            {% csrf_token %}
+                            <input type="hidden" id="userId">
+                            <label>
+                                Full Name
+                                <input type="text" id="userFullName" required>
+                            </label>
+                            <label>
+                                Phone Number
+                                <input type="text" id="userPhoneNumber" maxlength="10" required>
+                            </label>
+                            <label>
+                                Username
+                                <input type="text" id="userUsername" required>
+                            </label>
+                            <label>
+                                Password (set only when needed)
+                                <input type="text" id="userPassword">
+                            </label>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Save User</button>
+                                <button type="button" class="btn-secondary" id="resetUserFormBtn">Clear</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <div class="table-head">
+                            <h2>User List</h2>
+                            <div class="search-group">
+                                <input type="text" id="userSearchInput" placeholder="Search by name, username, phone">
+                                <button type="button" class="btn-secondary" id="searchUsersBtn">Search</button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Full Name</th>
+                                        <th>Username</th>
+                                        <th>Phone</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="admins" class="section">
+                <div class="section-head">
+                    <h1>Manage Admins</h1>
+                </div>
+
+                <div class="panel-grid">
+                    <div class="card">
+                        <h2>Admin Form</h2>
+                        <form id="adminForm" class="form-grid">
+                            {% csrf_token %}
+                            <input type="hidden" id="adminId">
+                            <label>
+                                Full Name
+                                <input type="text" id="adminFullName" required>
+                            </label>
+                            <label>
+                                Phone Number
+                                <input type="text" id="adminPhoneNumber" maxlength="10" required>
+                            </label>
+                            <label>
+                                Username
+                                <input type="text" id="adminUsername" required>
+                            </label>
+                            <label>
+                                Password (set only when needed)
+                                <input type="text" id="adminPassword">
+                            </label>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">Save Admin</button>
+                                <button type="button" class="btn-secondary" id="resetAdminFormBtn">Clear</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <div class="table-head">
+                            <h2>Admin List</h2>
+                            <div class="search-group">
+                                <input type="text" id="adminSearchInput" placeholder="Search by name, username, phone">
+                                <button type="button" class="btn-secondary" id="searchAdminsBtn">Search</button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Full Name</th>
+                                        <th>Username</th>
+                                        <th>Phone</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="orders" class="section">
+                <div class="section-head">
+                    <h1>Incoming Orders</h1>
+                    <div class="search-group">
+                        <input type="text" id="orderSearchInput" placeholder="Search by customer, car, order id, phone">
+                        <button type="button" class="btn-secondary" id="searchOrdersBtn">Search</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Car</th>
+                                    <th>Date Range</th>
+                                    <th>Status</th>
+                                    <th>Stage</th>
+                                    <th>Total</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="history" class="section">
+                <div class="section-head">
+                    <h1>Completed History</h1>
+                    <div class="search-group">
+                        <input type="text" id="historySearchInput" placeholder="Search by customer, car, order id, phone">
+                        <button type="button" class="btn-secondary" id="searchHistoryBtn">Search</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Car</th>
+                                    <th>Date Range</th>
+                                    <th>Status</th>
+                                    <th>Stage</th>
+                                    <th>Total</th>
+                                    <th>Completed At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{% static 'Env/js/admin.js' %}"></script>
 </body>
 </html>

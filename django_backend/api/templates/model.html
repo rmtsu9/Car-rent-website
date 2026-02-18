@@ -1,0 +1,109 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Management</title>
+    <link rel="stylesheet" href="{% static 'Env/css/model.css' %}">
+</head>
+<body>
+    <div
+        class="model-app"
+        id="modelApp"
+        data-cars-url="{% url 'admin_cars_api' %}"
+        data-admin-url="{% url 'admin' %}"
+    >
+        <header class="topbar">
+            <div>
+                <h1>Car Model Management</h1>
+                <p>เพิ่ม แก้ไข ลบ ค้นหา และจัดการรูปรถยนต์</p>
+            </div>
+            <button type="button" id="backAdminBtn" class="btn-secondary">Back to Admin</button>
+        </header>
+
+        <main class="layout">
+            <section class="card">
+                <h2>Car Form</h2>
+                <form id="carForm" class="form-grid">
+                    {% csrf_token %}
+                    <input type="hidden" id="carId">
+
+                    <label>
+                        ชื่อรถ
+                        <input type="text" id="carName" required>
+                    </label>
+
+                    <label>
+                        ราคาเช่าต่อวัน (THB)
+                        <input type="number" id="carPricePerDay" min="0" required>
+                    </label>
+
+                    <label>
+                        ใช้น้ำมัน
+                        <input type="text" id="carFuelType" placeholder="เช่น เบนซิน / ดีเซล / ไฟฟ้า" required>
+                    </label>
+
+                    <label>
+                        อัตราสิ้นเปลือง
+                        <input type="text" id="carFuelConsumption" placeholder="เช่น 14 km/L" required>
+                    </label>
+
+                    <label>
+                        ประเภทรถ
+                        <input type="text" id="carType" placeholder="เช่น SUV / Sedan / Coupe" required>
+                    </label>
+
+                    <label>
+                        นั่งได้กี่ท่าน
+                        <input type="number" id="carSeatCapacity" min="1" required>
+                    </label>
+
+                    <label>
+                        ความจุเครื่องยนต์ (CC)
+                        <input type="number" id="carEngineCC" min="0" required>
+                    </label>
+
+                    <label>
+                        พละกำลัง (HP)
+                        <input type="number" id="carHorsepower" min="0" required>
+                    </label>
+
+                    <label class="checkbox-field">
+                        <input type="checkbox" id="carIsActive" checked>
+                        <span>เปิดใช้งานรถคันนี้สำหรับการจอง</span>
+                    </label>
+
+                    <label>
+                        รูปเริ่มต้น (URL หรือ path)
+                        <input type="text" id="carImageUrl" placeholder="เช่น https://example.com/car.jpg">
+                    </label>
+
+                    <label>
+                        คำอธิบายรูป
+                        <input type="text" id="carImageCaption" placeholder="เช่น ด้านหน้า">
+                    </label>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Car</button>
+                        <button type="button" class="btn-secondary" id="resetCarFormBtn">Clear</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="list-head">
+                    <h2>Car List</h2>
+                    <div class="search-group">
+                        <input type="text" id="carSearchInput" placeholder="ค้นหาชื่อรถ / ประเภท / น้ำมัน">
+                        <button type="button" class="btn-secondary" id="searchCarsBtn">Search</button>
+                    </div>
+                </div>
+                <div id="carsContainer" class="cars-container"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{% static 'Env/js/model.js' %}"></script>
+</body>
+</html>
