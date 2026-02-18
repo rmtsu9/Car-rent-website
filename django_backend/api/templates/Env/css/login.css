@@ -6,7 +6,7 @@
 }
 
 body{
-    height:100vh;
+    min-height:100vh;
     display:flex;
     flex-direction:column;
 }
@@ -233,4 +233,118 @@ footer a:hover{
     height:3px;
     background:#000;
     margin:15px 0 25px 0;
+}
+
+@media (max-width: 1100px){
+    .slider-content{
+        left:40px;
+        bottom:64px;
+        max-width:380px;
+    }
+
+    .headline{
+        font-size:34px;
+    }
+
+    .slider-dots{
+        left:40px;
+    }
+}
+
+@media (max-width: 840px){
+    body{
+        min-height:100dvh;
+    }
+
+    .container{
+        flex-direction:column;
+    }
+
+    .left-panel{
+        flex:none;
+        min-height:38vh;
+    }
+
+    .slider-content{
+        left:22px;
+        bottom:54px;
+        max-width:85%;
+    }
+
+    .headline{
+        font-size:30px;
+        margin-bottom:10px;
+    }
+
+    .tagline{
+        font-size:13px;
+        letter-spacing:2px;
+    }
+
+    .slider-dots{
+        left:22px;
+        bottom:20px;
+    }
+
+    .right-panel{
+        flex:none;
+        padding:20px 14px;
+    }
+
+    .form-box{
+        width:min(520px, 100%);
+        max-width:none;
+        padding:28px 22px;
+    }
+
+    .brand{
+        text-align:left;
+        margin-bottom:18px;
+    }
+
+    footer{
+        padding:10px;
+        line-height:1.6;
+    }
+}
+
+@media (max-width: 520px){
+    .left-panel{
+        min-height:31vh;
+    }
+
+    .headline{
+        font-size:24px;
+    }
+
+    .tagline{
+        font-size:12px;
+        letter-spacing:1.3px;
+    }
+
+    input{
+        padding:12px;
+        margin-bottom:14px;
+    }
+
+    button{
+        margin-bottom:12px;
+    }
+
+    .divider{
+        margin:14px 0;
+    }
+
+    .line{
+        margin:12px 0 18px 0;
+    }
+
+    footer{
+        font-size:11px;
+    }
+
+    footer a{
+        display:inline-block;
+        margin:2px 6px;
+    }
 }

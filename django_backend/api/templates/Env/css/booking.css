@@ -461,14 +461,33 @@ body {
         min-height: 100vh;
         margin: 0;
         border-radius: 0;
+        flex-direction: column;
     }
 
     .booking-sidebar {
-        display: none;
+        width: 100%;
+        padding: 10px;
+        border-right: none;
+        border-bottom: 1px solid #dbe7f4;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .booking-sidebar .nav-btn {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 140px;
+        text-align: center;
     }
 
     .stepper {
-        flex-direction: column;
+        overflow-x: auto;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .step-indicator {
+        min-width: 210px;
     }
 
     .wizard-step {
@@ -492,5 +511,35 @@ body {
     .btn-primary,
     .btn-secondary {
         width: 100%;
+    }
+
+    .booking-header {
+        padding: 16px;
+    }
+
+    .booking-header h1 {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 520px) {
+    .booking-sidebar .nav-btn {
+        flex-basis: 100%;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .panel h2 {
+        font-size: 18px;
+    }
+
+    .step-indicator {
+        min-width: 180px;
+    }
+
+    .step-indicator .step-label {
+        font-size: 12px;
     }
 }

@@ -280,7 +280,7 @@ select:focus {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 760px;
+    min-width: 680px;
 }
 
 th,
@@ -347,13 +347,78 @@ tbody tr:hover {
         top: 0;
         z-index: 20;
         border-bottom: 1px solid #314d69;
+        padding: 14px 12px;
     }
 
     .nav-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+
+    .nav-btn {
+        white-space: nowrap;
+        min-height: 40px;
     }
 
     .nav-actions {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .account-box {
+        margin-top: 6px;
+    }
+
+    .admin-content {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-content {
+        padding: 12px;
+    }
+
+    .section-head h1 {
+        font-size: 22px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-group {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-group input {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .search-group .btn-secondary {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn-primary,
+    .form-actions .btn-secondary {
+        width: 100%;
+    }
+
+    .inline-actions {
+        flex-wrap: wrap;
+    }
+
+    th,
+    td {
+        padding: 8px 9px;
+        font-size: 12px;
     }
 }
