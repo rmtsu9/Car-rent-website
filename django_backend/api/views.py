@@ -1,13 +1,18 @@
 import json
+import os
+import uuid
 from datetime import date, datetime, timedelta
 
+from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db.models import Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import get_valid_filename
 
-from .models import Booking, Car, CarImage, User
+from .models import Booking, Car, CarImage, Notification, User
 
 
 BOOKING_BLOCKING_STATUSES = ["pending", "approved"]
@@ -24,9 +29,7 @@ ORDER_STAGE_NEXT = {
     "awaiting_full_payment": "completed",
 }
 ORDER_STAGE_ACTION_TEXT = {
-    "awaiting_contact": "Mark callback as completed",
     "awaiting_deposit": "Confirm 30% deposit paid",
-    "awaiting_handover": "Confirm pickup/delivery completed",
     "awaiting_full_payment": "Confirm full payment and move to History",
 }
 
@@ -71,6 +74,9 @@ def _get_stage_action(booking):
         return None
 
     if booking.status == "rejected":
+        return None
+
+    if booking.order_stage in ("awaiting_contact", "awaiting_handover"):
         return None
 
     action_label = ORDER_STAGE_ACTION_TEXT.get(booking.order_stage)
@@ -148,6 +154,15 @@ def _require_admin_json(request):
     return user, None
 
 
+def _require_customer_json(request):
+    user = request.session.get("user")
+    if not user:
+        return None, JsonResponse({"success": False, "message": "Unauthorized"}, status=401)
+    if user.get("role") == "admin":
+        return None, JsonResponse({"success": False, "message": "Forbidden"}, status=403)
+    return user, None
+
+
 def _serialize_user(user):
     return {
         "id": user.id,
@@ -214,6 +229,29 @@ def _serialize_booking(booking):
         "created_at": _format_datetime(booking.created_at),
         "completed_at": _format_datetime(booking.completed_at),
     }
+
+
+def _serialize_notification(notification):
+    return {
+        "id": notification.id,
+        "booking_id": notification.booking_id,
+        "title": notification.title,
+        "message": notification.message,
+        "is_read": notification.is_read,
+        "created_at": _format_datetime(notification.created_at),
+    }
+
+
+def _create_user_notification(user, booking, title, message):
+    if user is None:
+        return
+
+    Notification.objects.create(
+        user=user,
+        booking=booking,
+        title=title,
+        message=message,
+    )
 
 
 def _apply_booking_search(queryset, keyword):
@@ -962,6 +1000,56 @@ def admin_car_images_api(request, car_id):
     return JsonResponse({"success": True, "data": _serialize_car_image(image)})
 
 
+def admin_car_image_upload_api(request, car_id):
+    _, error = _require_admin_json(request)
+    if error:
+        return error
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    car = Car.objects.filter(id=car_id).first()
+    if car is None:
+        return JsonResponse({"success": False, "message": "Car not found"}, status=404)
+
+    uploaded_file = request.FILES.get("image")
+    if uploaded_file is None:
+        return JsonResponse({"success": False, "message": "image file is required"}, status=400)
+
+    if uploaded_file.size > 10 * 1024 * 1024:
+        return JsonResponse({"success": False, "message": "Image size must not exceed 10 MB"}, status=400)
+
+    content_type = (uploaded_file.content_type or "").lower()
+    if content_type and not content_type.startswith("image/"):
+        return JsonResponse({"success": False, "message": "Uploaded file must be an image"}, status=400)
+
+    safe_name = get_valid_filename(uploaded_file.name or "upload")
+    ext = os.path.splitext(safe_name)[1].lower()
+
+    if not ext:
+        ext_map = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+            "image/gif": ".gif",
+            "image/bmp": ".bmp",
+        }
+        ext = ext_map.get(content_type, ".jpg")
+
+    allowed_ext = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"}
+    if ext not in allowed_ext:
+        return JsonResponse({"success": False, "message": "Unsupported image type"}, status=400)
+
+    file_name = f"car_images/{uuid.uuid4().hex}{ext}"
+    stored_path = default_storage.save(file_name, uploaded_file)
+    image_url = default_storage.url(stored_path)
+
+    caption = _clean_text(request.POST.get("caption"))
+    image = CarImage.objects.create(car=car, image_url=image_url, caption=caption)
+
+    return JsonResponse({"success": True, "data": _serialize_car_image(image)})
+
+
 def admin_car_image_detail_api(request, car_id, image_id):
     _, error = _require_admin_json(request)
     if error:
@@ -996,10 +1084,79 @@ def admin_car_image_detail_api(request, car_id, image_id):
         return JsonResponse({"success": True, "data": _serialize_car_image(image)})
 
     if request.method == "DELETE":
+        if image.image_url and settings.MEDIA_URL and image.image_url.startswith(settings.MEDIA_URL):
+            relative_path = image.image_url[len(settings.MEDIA_URL):]
+            if relative_path and default_storage.exists(relative_path):
+                default_storage.delete(relative_path)
         image.delete()
         return JsonResponse({"success": True})
 
     return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+
+def admin_order_stage_approve_api(request, booking_id):
+    _, error = _require_admin_json(request)
+    if error:
+        return error
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    booking = Booking.objects.select_related("user", "car").filter(id=booking_id).first()
+    if booking is None:
+        return JsonResponse({"success": False, "message": "Order not found"}, status=404)
+
+    if booking.status == "rejected":
+        return JsonResponse({"success": False, "message": "This order is rejected"}, status=400)
+
+    if booking.order_stage == "completed":
+        return JsonResponse({"success": False, "message": "This order is already completed"}, status=400)
+
+    message = ""
+    update_fields = []
+
+    if booking.order_stage == "awaiting_contact":
+        booking.order_stage = "awaiting_deposit"
+        update_fields.append("order_stage")
+        if booking.status != "approved":
+            booking.status = "approved"
+            update_fields.append("status")
+        _create_user_notification(
+            user=booking.user,
+            booking=booking,
+            title=f"Order #{booking.id}: Callback approved",
+            message="Admin approved callback confirmation. You can now pay 30% deposit.",
+        )
+        message = "Callback approved. Customer can proceed to 30% deposit."
+    elif booking.order_stage == "awaiting_handover":
+        booking.order_stage = "awaiting_full_payment"
+        update_fields.append("order_stage")
+        _create_user_notification(
+            user=booking.user,
+            booking=booking,
+            title=f"Order #{booking.id}: Pickup/Delivery approved",
+            message="Admin confirmed pickup or delivery. You can now pay the full amount.",
+        )
+        message = "Pickup/delivery confirmed. Customer can proceed to full payment."
+    else:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "This stage does not require admin approval",
+            },
+            status=400,
+        )
+
+    booking.save(update_fields=update_fields)
+    booking.refresh_from_db()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "message": message,
+            "data": _serialize_booking(booking),
+        }
+    )
 
 
 def admin_orders_api(request):
@@ -1038,6 +1195,70 @@ def admin_history_api(request):
     bookings = _apply_booking_search(bookings, request.GET.get("q"))
 
     return JsonResponse({"success": True, "data": [_serialize_booking(booking) for booking in bookings]})
+
+
+def user_notifications_api(request):
+    user_session, error = _require_customer_json(request)
+    if error:
+        return error
+
+    if request.method != "GET":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    limit = request.GET.get("limit", "20")
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = 20
+
+    limit = max(1, min(limit, 50))
+    queryset = Notification.objects.filter(user_id=user_session["id"]).select_related("booking")
+    notifications = list(queryset[:limit])
+    unread_count = queryset.filter(is_read=False).count()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "data": {
+                "notifications": [_serialize_notification(item) for item in notifications],
+                "unread_count": unread_count,
+            },
+        }
+    )
+
+
+def user_notifications_mark_read_api(request):
+    user_session, error = _require_customer_json(request)
+    if error:
+        return error
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    payload, payload_error = _parse_payload(request)
+    if payload_error:
+        return payload_error
+
+    ids = payload.get("ids") or []
+    if not isinstance(ids, list):
+        return JsonResponse({"success": False, "message": "ids must be an array"}, status=400)
+
+    notification_ids = []
+    for item in ids:
+        raw = _clean_text(item)
+        if raw.isdigit():
+            notification_ids.append(int(raw))
+
+    if not notification_ids:
+        return JsonResponse({"success": True, "data": {"updated": 0}})
+
+    updated = Notification.objects.filter(
+        user_id=user_session["id"],
+        id__in=notification_ids,
+        is_read=False,
+    ).update(is_read=True)
+
+    return JsonResponse({"success": True, "data": {"updated": updated}})
 
 
 # Booking page + create booking
@@ -1255,6 +1476,9 @@ def advance_order_stage(request, booking_id):
         return HttpResponse("Order not found", status=404)
 
     if booking.status == "rejected":
+        return redirect(f"{reverse('order')}?booking_id={booking.id}")
+
+    if booking.order_stage in ("awaiting_contact", "awaiting_handover"):
         return redirect(f"{reverse('order')}?booking_id={booking.id}")
 
     next_stage = ORDER_STAGE_NEXT.get(booking.order_stage)

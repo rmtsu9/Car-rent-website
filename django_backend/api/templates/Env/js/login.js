@@ -16,9 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     initSlider([
-        "Image/porsche.jpg",
-        "Image/GR86.jpg",
-        "Image/GLS.jpg",
+        "/static/Image/porsche.jpg",
+        "/static/Image/GR86.jpg",
+        "/static/Image/GLS.jpg",
     ]);
 });
 

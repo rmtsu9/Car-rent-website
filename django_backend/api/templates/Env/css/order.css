@@ -51,6 +51,121 @@ body {
     font-size: 14px;
 }
 
+.notification-card {
+    background: #ffffff;
+    border: 1px solid #d6e5f4;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 8px 20px rgba(35, 79, 127, 0.08);
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.notification-header h3 {
+    margin: 0;
+    color: #104976;
+}
+
+.notification-badge {
+    background: #eaf4ff;
+    color: #0f5ba1;
+    border: 1px solid #bdd7f2;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 10px;
+}
+
+.notification-list {
+    display: grid;
+    gap: 8px;
+}
+
+.notification-item {
+    border: 1px solid #d6e5f4;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fbff;
+}
+
+.notification-item.unread {
+    border-color: #80add9;
+    background: #e9f4ff;
+}
+
+.notification-item-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+}
+
+.notification-item-head strong {
+    color: #0f497f;
+}
+
+.notification-item-head small {
+    color: #55718d;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.notification-item p {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #35516c;
+}
+
+.notification-empty {
+    margin: 0;
+    color: #627c95;
+    font-size: 14px;
+}
+
+.notification-toast-wrap {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 9999;
+    display: grid;
+    gap: 8px;
+    width: min(340px, calc(100vw - 28px));
+}
+
+.notification-toast {
+    background: #0f5ba1;
+    color: #ffffff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 24px rgba(16, 73, 118, 0.35);
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: 0.2s ease;
+}
+
+.notification-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.notification-toast strong {
+    display: block;
+    font-size: 13px;
+}
+
+.notification-toast span {
+    display: block;
+    font-size: 12px;
+    margin-top: 4px;
+    opacity: 0.96;
+}
+
 .focus-card,
 .order-list-card,
 .empty-state {
@@ -224,6 +339,12 @@ body {
     background: #e8f8eb;
     border: 1px solid #b8dfc1;
     color: #2f7d41;
+}
+
+.status-message.info {
+    background: #eaf3fe;
+    border: 1px solid #b9d3ef;
+    color: #1e5c97;
 }
 
 .btn-primary {

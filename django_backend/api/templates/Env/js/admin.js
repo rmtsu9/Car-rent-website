@@ -9,6 +9,7 @@
         users: app.dataset.usersUrl,
         admins: app.dataset.adminsUrl,
         orders: app.dataset.ordersUrl,
+        orderApproveTemplate: app.dataset.orderApproveUrlTemplate,
         history: app.dataset.historyUrl,
         model: app.dataset.modelUrl,
     };
@@ -57,6 +58,10 @@
     function formatMoney(value) {
         const parsed = Number(value || 0);
         return `${parsed.toLocaleString("en-US")} THB`;
+    }
+
+    function orderApproveUrl(bookingId) {
+        return urls.orderApproveTemplate.replace("/0/", `/${bookingId}/`);
     }
 
     function sectionButton(sectionId) {
@@ -149,13 +154,20 @@
     function renderOrders() {
         const tbody = document.getElementById("ordersTableBody");
         if (!state.orders.length) {
-            tbody.innerHTML = `<tr><td colspan="8" class="empty-row">No incoming orders found</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="empty-row">No incoming orders found</td></tr>`;
             return;
         }
 
         tbody.innerHTML = state.orders
-            .map(
-                (order) => `
+            .map((order) => {
+                let actionHtml = "-";
+                if (order.order_stage === "awaiting_contact") {
+                    actionHtml = `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Callback</button>`;
+                } else if (order.order_stage === "awaiting_handover") {
+                    actionHtml = `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Handover</button>`;
+                }
+
+                return `
                 <tr>
                     <td>#${order.id}</td>
                     <td>${order.customer.fullName} (${order.customer.username})</td>
@@ -165,9 +177,10 @@
                     <td>${order.order_stage_display}</td>
                     <td>${formatMoney(order.total_price)}</td>
                     <td>${order.created_at || "-"}</td>
+                    <td>${actionHtml}</td>
                 </tr>
-            `
-            )
+            `;
+            })
             .join("");
     }
 
@@ -373,6 +386,36 @@
         }
     }
 
+    async function handleOrderAction(action, id) {
+        if (action !== "approve-order-stage") {
+            return;
+        }
+
+        const selected = state.orders.find((order) => String(order.id) === String(id));
+        if (!selected) {
+            return;
+        }
+
+        let confirmMessage = "Approve this order stage?";
+        if (selected.order_stage === "awaiting_contact") {
+            confirmMessage = `Approve callback for Order #${selected.id}?`;
+        } else if (selected.order_stage === "awaiting_handover") {
+            confirmMessage = `Approve pickup/delivery for Order #${selected.id}?`;
+        }
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            await apiRequest(orderApproveUrl(selected.id), "POST", {});
+            await loadOrders(document.getElementById("orderSearchInput").value.trim());
+            await loadDashboard();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
     function bindEvents() {
         document.querySelectorAll(".nav-btn").forEach((button) => {
             button.addEventListener("click", () => {
@@ -418,6 +461,14 @@
                 return;
             }
             handleAdminAction(target.dataset.action, target.dataset.id);
+        });
+
+        document.getElementById("ordersTableBody").addEventListener("click", (event) => {
+            const target = event.target.closest("button[data-action]");
+            if (!target) {
+                return;
+            }
+            handleOrderAction(target.dataset.action, target.dataset.id);
         });
 
         ["userSearchInput", "adminSearchInput", "orderSearchInput", "historySearchInput"].forEach((id) => {

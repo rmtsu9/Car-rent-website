@@ -38,9 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     initSlider([
-        "Image/GLS.jpg",
-        "Image/Handa.jpg",
-        "Image/GR86.jpg",
+        "/static/Image/GLS.jpg",
+        "/static/Image/Handa.jpg",
+        "/static/Image/GR86.jpg",
     ]);
 });
 

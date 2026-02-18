@@ -49,6 +49,24 @@
         return payload.data ?? payload;
     }
 
+    async function uploadFileRequest(url, formData) {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "X-CSRFToken": getCSRFToken(),
+            },
+            credentials: "same-origin",
+            body: formData,
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.success === false) {
+            throw new Error(payload.message || `Upload failed (${response.status})`);
+        }
+        return payload.data ?? payload;
+    }
+
     function carsCollectionUrl(query = "") {
         const base = isAdmin ? urls.adminCars : urls.publicCars;
         return query ? `${base}?q=${encodeURIComponent(query)}` : base;
@@ -66,6 +84,10 @@
         return `${urls.adminCars}${carId}/images/${imageId}/`;
     }
 
+    function carImageUploadUrl(carId) {
+        return `${urls.adminCars}${carId}/images/upload/`;
+    }
+
     function formatMoney(value) {
         return `${Number(value || 0).toLocaleString("en-US")} THB/day`;
     }
@@ -80,6 +102,9 @@
         }
         if (raw.startsWith("static/")) {
             return `/${raw}`;
+        }
+        if (raw.startsWith("Image/") || raw.startsWith("Env/")) {
+            return `/static/${raw}`;
         }
         return `/api/${raw}`;
     }
@@ -177,6 +202,11 @@
                             <input type="text" name="image_url" placeholder="Add image URL or path" required>
                             <input type="text" name="caption" placeholder="Image caption">
                             <button type="submit" class="btn-primary">Add Image</button>
+                        </form>
+                        <form class="import-image-form" data-car-id="${car.id}" enctype="multipart/form-data">
+                            <input type="file" name="image_file" accept="image/*" required>
+                            <input type="text" name="caption" placeholder="Image caption">
+                            <button type="submit" class="btn-secondary">Import from Device</button>
                         </form>
                     `
                     : "";
@@ -301,6 +331,35 @@
         }
     }
 
+    async function importImageFromDevice(formElement) {
+        if (!isAdmin) {
+            return;
+        }
+
+        const carId = formElement.dataset.carId;
+        const fileField = formElement.querySelector("input[name='image_file']");
+        const captionField = formElement.querySelector("input[name='caption']");
+        const file = fileField && fileField.files ? fileField.files[0] : null;
+
+        if (!file) {
+            alert("Please select an image file");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("caption", (captionField.value || "").trim());
+
+        try {
+            await uploadFileRequest(carImageUploadUrl(carId), formData);
+            fileField.value = "";
+            captionField.value = "";
+            await loadCars(document.getElementById("carSearchInput").value.trim());
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
     async function editImage(carId, imageId) {
         if (!isAdmin) {
             return;
@@ -407,11 +466,17 @@
 
         document.getElementById("carsContainer").addEventListener("submit", (event) => {
             const form = event.target.closest("form.add-image-form");
-            if (!form) {
+            if (form) {
+                event.preventDefault();
+                addImage(form);
                 return;
             }
-            event.preventDefault();
-            addImage(form);
+
+            const importForm = event.target.closest("form.import-image-form");
+            if (importForm) {
+                event.preventDefault();
+                importImageFromDevice(importForm);
+            }
         });
     }
 

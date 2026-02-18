@@ -15,6 +15,7 @@
         data-users-url="{% url 'admin_users_api' %}"
         data-admins-url="{% url 'admin_admins_api' %}"
         data-orders-url="{% url 'admin_orders_api' %}"
+        data-order-approve-url-template="{% url 'admin_order_stage_approve_api' 0 %}"
         data-history-url="{% url 'admin_history_api' %}"
         data-model-url="{% url 'model' %}"
     >
@@ -228,6 +229,7 @@
                                     <th>Stage</th>
                                     <th>Total</th>
                                     <th>Created At</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ordersTableBody"></tbody>

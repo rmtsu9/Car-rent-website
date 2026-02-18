@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+{% load static %}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modern Drive</title>
@@ -89,7 +90,7 @@ body{
 
   background:
     linear-gradient(to right, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0.05) 70%),
-    url("Image/porsche.jpg");
+    url("{% static 'Image/porsche.jpg' %}");
 
   background-size: cover;
   background-position: center;
@@ -314,15 +315,15 @@ footer{
 <section class="models">
   <div class="model-grid">
     <div class="model-card reveal">
-      <img src="Image/m4.jpg">
+      <img src="{% static 'Image/m4.jpg' %}">
       <h2>M Series</h2>
     </div>
     <div class="model-card reveal">
-      <img src="Image/Tesla-Model3.jpg">
+      <img src="{% static 'Image/Tesla-Model3.jpg' %}">
       <h2>Electric Car</h2>
     </div>
     <div class="model-card reveal">
-      <img src="Image/Handa.jpg">
+      <img src="{% static 'Image/Handa.jpg' %}">
       <h2>Family Sedans</h2>
     </div>
   </div>

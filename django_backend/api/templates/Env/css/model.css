@@ -316,6 +316,13 @@ input:focus {
     gap: 8px;
 }
 
+.import-image-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 220px) auto;
+    gap: 8px;
+    margin-top: 8px;
+}
+
 .empty-state {
     border: 1px dashed var(--line);
     border-radius: 10px;
@@ -358,7 +365,8 @@ input:focus {
         height: 160px;
     }
 
-    .add-image-form {
+    .add-image-form,
+    .import-image-form {
         grid-template-columns: 1fr;
     }
 }
