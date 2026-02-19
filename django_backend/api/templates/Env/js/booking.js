@@ -17,6 +17,34 @@ let mapLoaded = false;
 let mapLoadError = "";
 let leafletMap = null;
 let mapMarker = null;
+let leafletFallbackRequested = false;
+let leafletStyleFallbackInjected = false;
+let activeTileLayer = null;
+let tileSourceIndex = 0;
+let tileErrorCount = 0;
+
+const LEAFLET_FALLBACK_CSS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+const LEAFLET_FALLBACK_JS = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+const MAP_TILE_SOURCES = [
+    {
+        name: "OpenStreetMap",
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: "&copy; OpenStreetMap contributors",
+        subdomains: "abc",
+    },
+    {
+        name: "CARTO Light",
+        url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        subdomains: "abcd",
+    },
+    {
+        name: "OpenStreetMap.de",
+        url: "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
+        attribution: "&copy; OpenStreetMap contributors",
+        subdomains: "",
+    },
+];
 
 const elements = {
     form: document.getElementById("bookingForm"),
@@ -129,13 +157,110 @@ function setMapStatus(text, isError = false) {
     elements.pickupMapStatus.classList.toggle("error", Boolean(text) && isError);
 }
 
+function handleTileLoadError() {
+    tileErrorCount += 1;
+    if (tileErrorCount < 6) {
+        return;
+    }
+
+    const nextSourceIndex = tileSourceIndex + 1;
+    if (nextSourceIndex >= MAP_TILE_SOURCES.length) {
+        setMapStatus("Map tiles cannot be loaded. Please check internet and reload.", true);
+        return;
+    }
+
+    setTileLayer(nextSourceIndex, true);
+}
+
+function setTileLayer(sourceIndex, isFallback = false) {
+    if (!leafletMap) {
+        return;
+    }
+
+    const source = MAP_TILE_SOURCES[sourceIndex];
+    if (!source) {
+        return;
+    }
+
+    tileSourceIndex = sourceIndex;
+    tileErrorCount = 0;
+
+    if (activeTileLayer) {
+        activeTileLayer.off("tileerror", handleTileLoadError);
+        if (leafletMap.hasLayer(activeTileLayer)) {
+            leafletMap.removeLayer(activeTileLayer);
+        }
+        activeTileLayer = null;
+    }
+
+    activeTileLayer = L.tileLayer(source.url, {
+        maxZoom: 19,
+        attribution: source.attribution,
+        subdomains: source.subdomains,
+    }).addTo(leafletMap);
+
+    activeTileLayer.on("tileerror", handleTileLoadError);
+
+    if (isFallback) {
+        setMapStatus(`Switched map tiles to ${source.name}.`);
+    }
+}
+
+function injectLeafletCssFallback() {
+    if (leafletStyleFallbackInjected) {
+        return;
+    }
+
+    if (document.querySelector("link[data-leaflet-fallback='true']")) {
+        leafletStyleFallbackInjected = true;
+        return;
+    }
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = LEAFLET_FALLBACK_CSS;
+    link.setAttribute("data-leaflet-fallback", "true");
+    document.head.appendChild(link);
+    leafletStyleFallbackInjected = true;
+}
+
+function loadLeafletFallbackScript(onReady) {
+    if (leafletFallbackRequested) {
+        return;
+    }
+
+    leafletFallbackRequested = true;
+    setMapStatus("Loading map library fallback...", false);
+
+    const script = document.createElement("script");
+    script.src = LEAFLET_FALLBACK_JS;
+    script.async = true;
+
+    script.onload = () => {
+        mapLoadError = "";
+        if (typeof onReady === "function") {
+            onReady();
+        }
+    };
+
+    script.onerror = () => {
+        mapLoaded = false;
+        mapLoadError = "Cannot load map library. Please check internet and reload.";
+        setMapStatus(mapLoadError, true);
+    };
+
+    document.head.appendChild(script);
+}
+
 function ensureMapSize() {
     if (!leafletMap) {
         return;
     }
-    window.setTimeout(() => {
-        leafletMap.invalidateSize();
-    }, 80);
+    [0, 120, 280].forEach((delay) => {
+        window.setTimeout(() => {
+            leafletMap.invalidateSize();
+        }, delay);
+    });
 }
 
 function setStep(step) {
@@ -152,6 +277,9 @@ function setStep(step) {
     });
 
     if (step === 2) {
+        if (!mapLoaded && !leafletMap) {
+            initializePickupMap();
+        }
         ensureMapSize();
     }
 }
@@ -512,10 +640,21 @@ function initializePickupMap() {
         return;
     }
 
+    if (leafletMap) {
+        mapLoaded = true;
+        updateMapForPickupType();
+        ensureMapSize();
+        return;
+    }
+
     if (typeof window.L === "undefined") {
         mapLoaded = false;
-        mapLoadError = "Leaflet library is missing. Please check network and reload.";
+        mapLoadError = "Leaflet library is missing. Trying fallback source...";
         setMapStatus(mapLoadError, true);
+        injectLeafletCssFallback();
+        loadLeafletFallbackScript(() => {
+            initializePickupMap();
+        });
         return;
     }
 
@@ -523,10 +662,7 @@ function initializePickupMap() {
         zoomControl: true,
     }).setView([mapConfig.shopLat, mapConfig.shopLng], 13);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(leafletMap);
+    setTileLayer(0);
 
     leafletMap.on("click", (event) => {
         if (state.pickupType !== "delivery") {
@@ -539,6 +675,15 @@ function initializePickupMap() {
     mapLoadError = "";
     setMapStatus("");
     updateMapForPickupType();
+
+    // If primary Leaflet CSS failed to load, inject fallback CSS and recalculate map layout.
+    window.setTimeout(() => {
+        const computed = window.getComputedStyle(elements.pickupMap);
+        if (computed.position === "static") {
+            injectLeafletCssFallback();
+            ensureMapSize();
+        }
+    }, 40);
 }
 
 function validateStep2() {
@@ -747,6 +892,5 @@ window.logout = logout;
 document.addEventListener("DOMContentLoaded", () => {
     initializeDateInputs();
     bindEvents();
-    initializePickupMap();
     refreshAvailability();
 });

@@ -15,7 +15,7 @@ Car rental web application with public browsing, customer booking flow, admin da
 - Frontend: HTML, CSS, JavaScript
 - Backend: Django 5.x
 - Database: PostgreSQL
-- Map: Leaflet.js + OpenStreetMap tiles (CDN)
+- Map: Leaflet.js (bundled in project static) + OpenStreetMap tiles
 
 ## Architecture
 `HTML -> JavaScript -> Django -> PostgreSQL`
@@ -261,9 +261,9 @@ Use:
 - `http://127.0.0.1:8000/api/logout/`
 
 ### Map does not load
-- Ensure internet access to CDN resources:
-  - `https://unpkg.com/leaflet@1.9.4/...`
-  - OpenStreetMap tile servers
+- Leaflet library is loaded from local static: `Env/vendor/leaflet/*`
+- Ensure internet access to tile servers (OpenStreetMap/CARTO fallback)
+- Hard refresh the browser (`Ctrl+F5`) after updating frontend assets
 
 ### Image upload fails
 - Max file size is `10 MB`
