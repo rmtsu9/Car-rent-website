@@ -6,6 +6,7 @@
     <title>Booking - Car Rental</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="{% static 'Env/css/booking.css' %}">
 </head>
 <body>
@@ -54,7 +55,6 @@
                 method="POST"
                 action="{% url 'booking' %}"
                 data-availability-url="{% url 'booking_availability' %}"
-                data-google-maps-key="{{ google_maps_api_key }}"
                 data-shop-name="{{ shop_name|escape }}"
                 data-shop-address="{{ shop_address|escape }}"
                 data-shop-lat="{{ shop_lat }}"
@@ -268,6 +268,7 @@
     </div>
 
     <script src="{% static 'Env/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="{% static 'Env/js/booking.js' %}"></script>
 </body>
 </html>

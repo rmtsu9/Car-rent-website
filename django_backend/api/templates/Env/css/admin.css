@@ -327,6 +327,16 @@ tbody tr:hover {
     color: var(--danger);
 }
 
+.inline-btn.map-btn {
+    border-color: #a9c9e8;
+    color: #0d5f9f;
+    background: #eef6ff;
+}
+
+.inline-btn.map-btn:hover {
+    background: #e0efff;
+}
+
 .empty-row {
     color: var(--muted);
 }

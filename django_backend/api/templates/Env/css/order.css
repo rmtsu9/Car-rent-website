@@ -321,6 +321,19 @@ body {
     margin-top: 16px;
 }
 
+.delivery-map-box {
+    margin-top: 14px;
+    display: grid;
+    gap: 8px;
+    justify-items: start;
+}
+
+.delivery-map-address {
+    margin: 0;
+    color: #4f6880;
+    font-size: 13px;
+}
+
 .status-message {
     margin: 0;
     border-radius: 10px;
@@ -360,6 +373,21 @@ body {
 
 .btn-primary:hover {
     background: #0e5b9e;
+}
+
+.btn-secondary {
+    border: 1px solid #7fb0de;
+    border-radius: 10px;
+    background: #edf6ff;
+    color: #0f5ba1;
+    font-weight: 700;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: #dceeff;
 }
 
 .order-list-card h3 {

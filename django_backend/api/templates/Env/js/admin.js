@@ -64,6 +64,35 @@
         return urls.orderApproveTemplate.replace("/0/", `/${bookingId}/`);
     }
 
+    function parseCoordinate(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function hasDeliveryCoordinates(order) {
+        return (
+            order.pickup_type === "delivery"
+            && parseCoordinate(order.delivery_lat) !== null
+            && parseCoordinate(order.delivery_lng) !== null
+        );
+    }
+
+    function buildDeliveryMapUrl(lat, lng) {
+        return `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lng)}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
+    }
+
+    function openDeliveryMap(lat, lng) {
+        const parsedLat = parseCoordinate(lat);
+        const parsedLng = parseCoordinate(lng);
+        if (parsedLat === null || parsedLng === null) {
+            alert("This order does not have a valid delivery pin.");
+            return;
+        }
+
+        const mapUrl = buildDeliveryMapUrl(parsedLat, parsedLng);
+        window.open(mapUrl, "_blank", "noopener,noreferrer");
+    }
+
     function sectionButton(sectionId) {
         return document.querySelector(`.nav-btn[data-target="${sectionId}"]`);
     }
@@ -160,12 +189,26 @@
 
         tbody.innerHTML = state.orders
             .map((order) => {
-                let actionHtml = "-";
+                const actionButtons = [];
                 if (order.order_stage === "awaiting_contact") {
-                    actionHtml = `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Callback</button>`;
+                    actionButtons.push(
+                        `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Callback</button>`
+                    );
                 } else if (order.order_stage === "awaiting_handover") {
-                    actionHtml = `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Handover</button>`;
+                    actionButtons.push(
+                        `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Handover</button>`
+                    );
                 }
+
+                if (hasDeliveryCoordinates(order)) {
+                    actionButtons.push(
+                        `<button type="button" class="inline-btn map-btn" data-action="open-delivery-map" data-id="${order.id}">เปิดแผนที่จุดส่ง</button>`
+                    );
+                }
+
+                const actionHtml = actionButtons.length
+                    ? `<div class="inline-actions">${actionButtons.join("")}</div>`
+                    : "-";
 
                 return `
                 <tr>
@@ -387,12 +430,17 @@
     }
 
     async function handleOrderAction(action, id) {
-        if (action !== "approve-order-stage") {
+        const selected = state.orders.find((order) => String(order.id) === String(id));
+        if (!selected) {
             return;
         }
 
-        const selected = state.orders.find((order) => String(order.id) === String(id));
-        if (!selected) {
+        if (action === "open-delivery-map") {
+            openDeliveryMap(selected.delivery_lat, selected.delivery_lng);
+            return;
+        }
+
+        if (action !== "approve-order-stage") {
             return;
         }
 

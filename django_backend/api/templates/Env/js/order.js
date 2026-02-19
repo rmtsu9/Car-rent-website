@@ -1,7 +1,34 @@
 document.addEventListener("DOMContentLoaded", () => {
     bindAdvanceStageConfirm();
+    bindDeliveryMapButtons();
     initNotifications();
 });
+
+function parseCoordinate(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildDeliveryMapUrl(lat, lng) {
+    return `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lng)}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
+}
+
+function bindDeliveryMapButtons() {
+    document.querySelectorAll(".open-delivery-map-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            const lat = parseCoordinate(button.dataset.deliveryLat);
+            const lng = parseCoordinate(button.dataset.deliveryLng);
+
+            if (lat === null || lng === null) {
+                window.alert("Delivery map pin is unavailable for this order.");
+                return;
+            }
+
+            const mapUrl = buildDeliveryMapUrl(lat, lng);
+            window.open(mapUrl, "_blank", "noopener,noreferrer");
+        });
+    });
+}
 
 function bindAdvanceStageConfirm() {
     const advanceButton = document.querySelector(".advance-stage-btn");

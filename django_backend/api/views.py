@@ -1368,8 +1368,7 @@ def booking(request):
         {
             "cars": cars,
             "tomorrow": tomorrow,
-            "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
-            "shop_name": getattr(settings, "SHOP_NAME", "Modern Drive Pickup Center"),
+            "shop_name": getattr(settings, "SHOP_NAME", "TripCraft Car Rent Pickup Center"),
             "shop_address": getattr(settings, "SHOP_ADDRESS", ""),
             "shop_lat": getattr(settings, "SHOP_LAT", 13.7466),
             "shop_lng": getattr(settings, "SHOP_LNG", 100.5393),

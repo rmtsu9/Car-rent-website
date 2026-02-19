@@ -77,6 +77,22 @@
                     </div>
                 </div>
 
+                {% if selected_booking.pickup_type == "delivery" and selected_booking.delivery_lat is not None and selected_booking.delivery_lng is not None %}
+                    <div class="delivery-map-box">
+                        <button
+                            type="button"
+                            class="btn-secondary open-delivery-map-btn"
+                            data-delivery-lat="{{ selected_booking.delivery_lat }}"
+                            data-delivery-lng="{{ selected_booking.delivery_lng }}"
+                        >
+                            เปิดแผนที่จุดส่ง
+                        </button>
+                        {% if selected_booking.delivery_address %}
+                            <p class="delivery-map-address">Pinned location: {{ selected_booking.delivery_address }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
                 <div class="price-card">
                     <div class="price-row">
                         <span>Total Price</span>

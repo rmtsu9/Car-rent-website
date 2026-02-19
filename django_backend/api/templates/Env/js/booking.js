@@ -15,10 +15,8 @@
 let availabilityFetchId = 0;
 let mapLoaded = false;
 let mapLoadError = "";
-let googleMap = null;
+let leafletMap = null;
 let mapMarker = null;
-let mapGeocoder = null;
-let mapInfoWindow = null;
 
 const elements = {
     form: document.getElementById("bookingForm"),
@@ -80,8 +78,7 @@ const provinceCenters = {
 };
 
 const mapConfig = {
-    apiKey: (elements.form?.dataset.googleMapsKey || "").trim(),
-    shopName: (elements.form?.dataset.shopName || "Modern Drive Pickup Center").trim(),
+    shopName: (elements.form?.dataset.shopName || "TripCraft Car Rent Pickup Center").trim(),
     shopAddress: (elements.form?.dataset.shopAddress || "").trim(),
     shopLat: Number(elements.form?.dataset.shopLat || 13.7466),
     shopLng: Number(elements.form?.dataset.shopLng || 100.5393),
@@ -132,6 +129,15 @@ function setMapStatus(text, isError = false) {
     elements.pickupMapStatus.classList.toggle("error", Boolean(text) && isError);
 }
 
+function ensureMapSize() {
+    if (!leafletMap) {
+        return;
+    }
+    window.setTimeout(() => {
+        leafletMap.invalidateSize();
+    }, 80);
+}
+
 function setStep(step) {
     state.currentStep = step;
 
@@ -144,6 +150,10 @@ function setStep(step) {
         indicator.classList.toggle("active", indicatorStep === step);
         indicator.classList.toggle("completed", indicatorStep < step);
     });
+
+    if (step === 2) {
+        ensureMapSize();
+    }
 }
 
 function getDateValidationError() {
@@ -361,15 +371,43 @@ function clearDeliveryPin(resetStatus = true) {
     state.deliveryLng = "";
     state.deliveryAddress = "";
 
-    if (mapMarker) {
-        mapMarker.setMap(null);
-    }
-    if (mapInfoWindow) {
-        mapInfoWindow.close();
+    if (state.pickupType === "delivery" && mapMarker) {
+        mapMarker.remove();
+        mapMarker = null;
     }
 
     if (resetStatus) {
         setMapStatus("Delivery mode: click on the map to pin the customer delivery location.");
+    }
+}
+
+function setMapMarker(lat, lng, draggable, popupContent, openPopup = false) {
+    if (!leafletMap) {
+        return;
+    }
+
+    if (mapMarker) {
+        mapMarker.remove();
+        mapMarker = null;
+    }
+
+    mapMarker = L.marker([lat, lng], { draggable }).addTo(leafletMap);
+
+    if (draggable) {
+        mapMarker.on("dragend", (event) => {
+            if (state.pickupType !== "delivery") {
+                return;
+            }
+            const point = event.target.getLatLng();
+            setDeliveryPin(point.lat, point.lng);
+        });
+    }
+
+    if (popupContent) {
+        mapMarker.bindPopup(popupContent);
+        if (openPopup) {
+            mapMarker.openPopup();
+        }
     }
 }
 
@@ -379,14 +417,10 @@ function updateDeliveryPinStatus() {
         return;
     }
 
-    let message = `Pinned location: ${state.deliveryLat}, ${state.deliveryLng}`;
-    if (state.deliveryAddress) {
-        message += ` - ${state.deliveryAddress}`;
-    }
-    setMapStatus(message);
+    setMapStatus(`Pinned location: ${state.deliveryLat}, ${state.deliveryLng}`);
 }
 
-function setDeliveryPin(lat, lng, shouldReverseGeocode = true) {
+function setDeliveryPin(lat, lng) {
     const parsedLat = Number(lat);
     const parsedLng = Number(lng);
 
@@ -398,67 +432,49 @@ function setDeliveryPin(lat, lng, shouldReverseGeocode = true) {
     state.deliveryLng = parsedLng.toFixed(6);
     state.deliveryAddress = "";
 
-    const position = {
-        lat: Number(state.deliveryLat),
-        lng: Number(state.deliveryLng),
-    };
-
-    mapMarker.setMap(googleMap);
-    mapMarker.setPosition(position);
-    mapMarker.setDraggable(true);
-    googleMap.setCenter(position);
-    googleMap.setZoom(15);
-
-    if (!shouldReverseGeocode || !mapGeocoder) {
-        updateDeliveryPinStatus();
+    if (!mapLoaded || !leafletMap) {
         return;
     }
 
-    mapGeocoder.geocode({ location: position }, (results, status) => {
-        if (status === "OK" && results && results[0]) {
-            state.deliveryAddress = results[0].formatted_address;
-        } else {
-            state.deliveryAddress = "";
-        }
-        updateDeliveryPinStatus();
-    });
+    const popup = `<strong>Delivery pin</strong><div>${state.deliveryLat}, ${state.deliveryLng}</div>`;
+    setMapMarker(parsedLat, parsedLng, true, popup, false);
+    leafletMap.setView([parsedLat, parsedLng], 15);
+    updateDeliveryPinStatus();
 }
 
 function showShopLocation() {
-    const shopPosition = {
-        lat: mapConfig.shopLat,
-        lng: mapConfig.shopLng,
-    };
-
-    mapMarker.setMap(googleMap);
-    mapMarker.setPosition(shopPosition);
-    mapMarker.setDraggable(false);
-    googleMap.setCenter(shopPosition);
-    googleMap.setZoom(15);
+    state.deliveryLat = "";
+    state.deliveryLng = "";
+    state.deliveryAddress = "";
 
     const safeShopName = escapeHtml(mapConfig.shopName);
     const safeShopAddress = escapeHtml(mapConfig.shopAddress);
-    const addressRow = safeShopAddress ? `<div style="margin-top:4px;">${safeShopAddress}</div>` : "";
-    mapInfoWindow.setContent(`<div style="font-size:13px;"><strong>${safeShopName}</strong>${addressRow}</div>`);
-    mapInfoWindow.open({ map: googleMap, anchor: mapMarker });
+    const addressHtml = safeShopAddress ? `<div style="margin-top:4px;">${safeShopAddress}</div>` : "";
 
-    clearDeliveryPin(false);
+    setMapMarker(
+        mapConfig.shopLat,
+        mapConfig.shopLng,
+        false,
+        `<div style="font-size:13px;"><strong>${safeShopName}</strong>${addressHtml}</div>`,
+        true
+    );
+    leafletMap.setView([mapConfig.shopLat, mapConfig.shopLng], 15);
     setMapStatus(`Self Pickup location: ${mapConfig.shopName}${mapConfig.shopAddress ? ` - ${mapConfig.shopAddress}` : ""}`);
 }
 
 function showDeliveryMode() {
-    mapInfoWindow.close();
-
     if (state.deliveryLat && state.deliveryLng) {
-        setDeliveryPin(state.deliveryLat, state.deliveryLng, false);
-        updateDeliveryPinStatus();
+        setDeliveryPin(state.deliveryLat, state.deliveryLng);
         return;
     }
 
-    const provinceCenter = getProvinceCenter(elements.destinationProvince.value || elements.currentProvince.value);
-    mapMarker.setMap(null);
-    googleMap.setCenter(provinceCenter);
-    googleMap.setZoom(11);
+    if (mapMarker) {
+        mapMarker.remove();
+        mapMarker = null;
+    }
+
+    const center = getProvinceCenter(elements.destinationProvince.value || elements.currentProvince.value);
+    leafletMap.setView([center.lat, center.lng], 11);
     setMapStatus("Delivery mode: click on the map to pin the customer delivery location.");
 }
 
@@ -487,97 +503,42 @@ function updateMapForPickupType() {
         setClearPinButtonVisible(true);
         showDeliveryMode();
     }
+
+    ensureMapSize();
 }
 
-function loadGoogleMapsScript() {
-    return new Promise((resolve, reject) => {
-        if (window.google && window.google.maps) {
-            resolve();
-            return;
-        }
-
-        if (!mapConfig.apiKey) {
-            reject(new Error("Google Maps API key is missing. Set GOOGLE_MAPS_API_KEY in backend settings."));
-            return;
-        }
-
-        const existing = document.getElementById("googleMapsScript");
-        if (existing) {
-            let waited = 0;
-            const timer = window.setInterval(() => {
-                if (window.google && window.google.maps) {
-                    window.clearInterval(timer);
-                    resolve();
-                    return;
-                }
-
-                waited += 200;
-                if (waited >= 10000) {
-                    window.clearInterval(timer);
-                    reject(new Error("Google Maps script load timeout"));
-                }
-            }, 200);
-            return;
-        }
-
-        const script = document.createElement("script");
-        script.id = "googleMapsScript";
-        script.async = true;
-        script.defer = true;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(mapConfig.apiKey)}&libraries=places&v=weekly`;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load Google Maps script"));
-        document.head.appendChild(script);
-    });
-}
-
-async function initializePickupMap() {
+function initializePickupMap() {
     if (!elements.pickupMap) {
         return;
     }
 
-    setMapStatus("Loading Google Maps...");
-
-    try {
-        await loadGoogleMapsScript();
-
-        googleMap = new google.maps.Map(elements.pickupMap, {
-            center: { lat: mapConfig.shopLat, lng: mapConfig.shopLng },
-            zoom: 13,
-            mapTypeControl: false,
-            streetViewControl: false,
-        });
-
-        mapMarker = new google.maps.Marker({
-            map: googleMap,
-            draggable: false,
-        });
-
-        mapInfoWindow = new google.maps.InfoWindow();
-        mapGeocoder = new google.maps.Geocoder();
-
-        googleMap.addListener("click", (event) => {
-            if (state.pickupType !== "delivery") {
-                return;
-            }
-            setDeliveryPin(event.latLng.lat(), event.latLng.lng(), true);
-        });
-
-        mapMarker.addListener("dragend", (event) => {
-            if (state.pickupType !== "delivery") {
-                return;
-            }
-            setDeliveryPin(event.latLng.lat(), event.latLng.lng(), true);
-        });
-
-        mapLoaded = true;
-        setMapStatus("");
-        updateMapForPickupType();
-    } catch (error) {
+    if (typeof window.L === "undefined") {
         mapLoaded = false;
-        mapLoadError = error.message || "Google Maps cannot be loaded";
+        mapLoadError = "Leaflet library is missing. Please check network and reload.";
         setMapStatus(mapLoadError, true);
+        return;
     }
+
+    leafletMap = L.map(elements.pickupMap, {
+        zoomControl: true,
+    }).setView([mapConfig.shopLat, mapConfig.shopLng], 13);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(leafletMap);
+
+    leafletMap.on("click", (event) => {
+        if (state.pickupType !== "delivery") {
+            return;
+        }
+        setDeliveryPin(event.latlng.lat, event.latlng.lng);
+    });
+
+    mapLoaded = true;
+    mapLoadError = "";
+    setMapStatus("");
+    updateMapForPickupType();
 }
 
 function validateStep2() {
@@ -594,7 +555,7 @@ function validateStep2() {
         if (!mapLoaded) {
             setMessage(
                 elements.locationValidationMessage,
-                mapLoadError || "Google Maps is not ready yet. Please try again."
+                mapLoadError || "Map is not ready yet. Please try again."
             );
             return false;
         }
@@ -639,8 +600,7 @@ function updateSummary() {
     elements.summaryPickupType.textContent = state.pickupType === "delivery" ? "Delivery" : "Self Pickup";
 
     if (state.pickupType === "delivery") {
-        const addressSuffix = state.deliveryAddress ? ` - ${state.deliveryAddress}` : "";
-        elements.summaryMapLocation.textContent = `${state.deliveryLat}, ${state.deliveryLng}${addressSuffix}`;
+        elements.summaryMapLocation.textContent = `${state.deliveryLat}, ${state.deliveryLng}`;
     } else {
         elements.summaryMapLocation.textContent = `${mapConfig.shopName}${mapConfig.shopAddress ? ` - ${mapConfig.shopAddress}` : ""}`;
     }
@@ -712,15 +672,26 @@ function bindEvents() {
     });
 
     elements.currentProvince.addEventListener("change", () => {
+        if (!mapLoaded) {
+            return;
+        }
+
         if (state.pickupType === "self") {
             updateMapForPickupType();
-        } else if (!state.deliveryLat) {
+            return;
+        }
+
+        if (!state.deliveryLat) {
             updateMapForPickupType();
         }
     });
 
     elements.destinationProvince.addEventListener("change", () => {
-        if (state.pickupType === "delivery" && !state.deliveryLat) {
+        if (!mapLoaded || state.pickupType !== "delivery") {
+            return;
+        }
+
+        if (!state.deliveryLat) {
             updateMapForPickupType();
         }
     });
@@ -773,9 +744,9 @@ function logout() {
 
 window.logout = logout;
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
     initializeDateInputs();
     bindEvents();
-    await initializePickupMap();
+    initializePickupMap();
     refreshAvailability();
 });
