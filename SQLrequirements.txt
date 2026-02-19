@@ -1,0 +1,195 @@
+-- TripCraft Car Rent - PostgreSQL bootstrap + seed
+-- Run with:
+--   psql -U postgres -h localhost -f SQLrequirements.txt
+--
+-- This script is idempotent:
+-- - Creates DB role and DB if missing
+-- - Seeds Admin/Customer/Car data only when Django tables already exist
+--
+-- IMPORTANT
+-- - Table creation is handled by Django migrations.
+-- - Run this once to create DB, then run migrations, then run this again for seed data:
+--     cd django_backend
+--     python manage.py migrate
+
+-- 1) Create database role
+DO
+$$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_roles
+        WHERE rolname = 'car_rent_user'
+    ) THEN
+        CREATE ROLE car_rent_user LOGIN PASSWORD 'car_rent_pass';
+    ELSE
+        ALTER ROLE car_rent_user WITH LOGIN PASSWORD 'car_rent_pass';
+    END IF;
+END
+$$;
+
+-- 2) Create database
+SELECT 'CREATE DATABASE car_rent OWNER car_rent_user'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_database
+    WHERE datname = 'car_rent'
+)\gexec
+
+\connect car_rent
+
+-- 2.1) Check required application tables (created by Django migrate)
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('api_user', 'api_car', 'api_carimage')
+ORDER BY table_name;
+
+-- 3) Seed users (admin + demo customer) if api_user exists
+DO
+$$
+BEGIN
+    IF to_regclass('public.api_user') IS NULL THEN
+        RAISE NOTICE 'Skip user seed: table api_user not found. Run migrations first.';
+    ELSE
+        INSERT INTO api_user ("fullName", "phoneNumber", username, password, role)
+        VALUES ('System Admin', '0990000000', 'admin', 'pass', 'admin')
+        ON CONFLICT (username) DO UPDATE
+        SET
+            "fullName" = EXCLUDED."fullName",
+            "phoneNumber" = EXCLUDED."phoneNumber",
+            password = EXCLUDED.password,
+            role = EXCLUDED.role;
+
+        INSERT INTO api_user ("fullName", "phoneNumber", username, password, role)
+        VALUES ('Demo Customer', '0890000000', 'demo', 'pass', 'customer')
+        ON CONFLICT (username) DO UPDATE
+        SET
+            "fullName" = EXCLUDED."fullName",
+            "phoneNumber" = EXCLUDED."phoneNumber",
+            password = EXCLUDED.password,
+            role = EXCLUDED.role;
+    END IF;
+END
+$$;
+
+-- 4) Seed cars if api_car exists
+DO
+$$
+BEGIN
+    IF to_regclass('public.api_car') IS NULL THEN
+        RAISE NOTICE 'Skip car seed: table api_car not found. Run migrations first.';
+    ELSE
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Tesla Model 3') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Tesla Model 3', 2500, 'EV', '15.0 kWh/100km',
+                'Sedan', 5, 0, 283, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'BMW M4') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'BMW M4', 4200, 'Petrol', '9.8 km/L',
+                'Coupe', 4, 2993, 510, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Honda Civic') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Honda Civic', 1800, 'Petrol', '15.0 km/L',
+                'Sedan', 5, 1500, 178, TRUE
+            );
+        END IF;
+    END IF;
+END
+$$;
+
+-- 5) Seed sample images if api_carimage exists
+DO
+$$
+BEGIN
+    IF to_regclass('public.api_carimage') IS NULL OR to_regclass('public.api_car') IS NULL THEN
+        RAISE NOTICE 'Skip image seed: table api_carimage/api_car not found. Run migrations first.';
+    ELSE
+        INSERT INTO api_carimage (car_id, image_url, caption)
+        SELECT c.id, '/static/Image/Tesla-Model3.jpg', 'Tesla Model 3'
+        FROM api_car c
+        WHERE c.name = 'Tesla Model 3'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM api_carimage i
+              WHERE i.car_id = c.id
+                AND i.image_url = '/static/Image/Tesla-Model3.jpg'
+          );
+
+        INSERT INTO api_carimage (car_id, image_url, caption)
+        SELECT c.id, '/static/Image/m4.jpg', 'BMW M4'
+        FROM api_car c
+        WHERE c.name = 'BMW M4'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM api_carimage i
+              WHERE i.car_id = c.id
+                AND i.image_url = '/static/Image/m4.jpg'
+          );
+
+        INSERT INTO api_carimage (car_id, image_url, caption)
+        SELECT c.id, '/static/Image/Handa.jpg', 'Honda Civic'
+        FROM api_car c
+        WHERE c.name = 'Honda Civic'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM api_carimage i
+              WHERE i.car_id = c.id
+                AND i.image_url = '/static/Image/Handa.jpg'
+          );
+    END IF;
+END
+$$;
+
+-- 6) Verification (only works after migrations)
+-- SELECT id, username, role, "fullName", "phoneNumber" FROM api_user ORDER BY id;
+-- SELECT id, name, price_per_day, fuel_type, car_type, is_active FROM api_car ORDER BY id;
+
+/*
+OPTIONAL REFERENCE ONLY (manual table schema)
+Use this only when you are not using Django migrations.
+If you create tables manually, do not run normal migrate without planning fake migrations.
+
+CREATE TABLE api_user (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    "fullName" VARCHAR(100) NOT NULL,
+    "phoneNumber" VARCHAR(15) UNIQUE NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(10) NOT NULL CHECK (role IN ('admin', 'customer'))
+);
+
+CREATE TABLE api_car (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price_per_day INTEGER NOT NULL,
+    fuel_type VARCHAR(50) NOT NULL DEFAULT '',
+    fuel_consumption VARCHAR(50) NOT NULL DEFAULT '',
+    car_type VARCHAR(50) NOT NULL DEFAULT '',
+    seat_capacity SMALLINT NOT NULL DEFAULT 4,
+    engine_cc INTEGER NOT NULL DEFAULT 0,
+    horsepower INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- "Admin" is not a separate table.
+-- Admin account is a row in api_user where role='admin'.
+*/

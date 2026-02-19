@@ -1,0 +1,6 @@
+# TripCraft Car Rent - Python dependencies
+# Install with:
+#   pip install -r requirements.txt
+
+Django>=5.2,<5.3
+psycopg2-binary>=2.9,<3.0
