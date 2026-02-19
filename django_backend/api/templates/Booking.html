@@ -49,7 +49,17 @@
                 </div>
             </div>
 
-            <form id="bookingForm" method="POST" action="{% url 'booking' %}" data-availability-url="{% url 'booking_availability' %}">
+            <form
+                id="bookingForm"
+                method="POST"
+                action="{% url 'booking' %}"
+                data-availability-url="{% url 'booking_availability' %}"
+                data-google-maps-key="{{ google_maps_api_key }}"
+                data-shop-name="{{ shop_name|escape }}"
+                data-shop-address="{{ shop_address|escape }}"
+                data-shop-lat="{{ shop_lat }}"
+                data-shop-lng="{{ shop_lng }}"
+            >
                 {% csrf_token %}
 
                 <input type="hidden" name="car_id" id="form_car_id">
@@ -59,6 +69,9 @@
                 <input type="hidden" name="current_province" id="form_current_province">
                 <input type="hidden" name="destination_province" id="form_destination_province">
                 <input type="hidden" name="contact_number" id="form_contact_number">
+                <input type="hidden" name="delivery_lat" id="form_delivery_lat">
+                <input type="hidden" name="delivery_lng" id="form_delivery_lng">
+                <input type="hidden" name="delivery_address" id="form_delivery_address">
 
                 <section class="wizard-step active" data-step="1">
                     <div class="step-layout">
@@ -157,6 +170,17 @@
                                 </span>
                             </label>
                         </div>
+                        <div class="pickup-map-panel">
+                            <div class="pickup-map-head">
+                                <h3 id="pickupMapTitle">Pickup Location Map</h3>
+                                <button type="button" class="btn-secondary map-clear-btn" id="clearDeliveryPinBtn">Clear Pin</button>
+                            </div>
+                            <p class="pickup-map-help" id="pickupMapHelp">
+                                Self Pickup: shows shop location. Delivery: click map to pin customer delivery point.
+                            </p>
+                            <div class="pickup-map-canvas" id="pickupMap"></div>
+                            <p class="pickup-map-status" id="pickupMapStatus"></p>
+                        </div>
                         <p class="inline-message" id="locationValidationMessage"></p>
                     </div>
 
@@ -194,6 +218,10 @@
                             <div class="summary-item">
                                 <span>Pickup Method</span>
                                 <strong id="summaryPickupType">-</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Map Location</span>
+                                <strong id="summaryMapLocation">-</strong>
                             </div>
                         </div>
 

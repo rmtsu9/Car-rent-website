@@ -221,6 +221,9 @@ def _serialize_booking(booking):
         "current_province": booking.current_province,
         "destination_province": booking.destination_province,
         "pickup_type": booking.pickup_type,
+        "delivery_lat": booking.delivery_lat,
+        "delivery_lng": booking.delivery_lng,
+        "delivery_address": booking.delivery_address,
         "contact_number": booking.contact_number,
         "status": booking.status,
         "order_stage": booking.order_stage,
@@ -1277,6 +1280,9 @@ def booking(request):
         current_province = request.POST.get("current_province")
         destination_province = request.POST.get("destination_province")
         contact_number = request.POST.get("contact_number")
+        delivery_lat_raw = _clean_text(request.POST.get("delivery_lat"))
+        delivery_lng_raw = _clean_text(request.POST.get("delivery_lng"))
+        delivery_address = _clean_text(request.POST.get("delivery_address"))
 
         if not all(
             [
@@ -1296,6 +1302,21 @@ def booking(request):
 
         if not contact_number.isdigit() or len(contact_number) != 10:
             return HttpResponse("Please provide a 10-digit contact number")
+
+        delivery_lat = None
+        delivery_lng = None
+        if pickup_type == "delivery":
+            if not delivery_lat_raw or not delivery_lng_raw:
+                return HttpResponse("Please pin delivery location on the map")
+
+            try:
+                delivery_lat = float(delivery_lat_raw)
+                delivery_lng = float(delivery_lng_raw)
+            except ValueError:
+                return HttpResponse("Invalid delivery map coordinates")
+
+            if not (-90 <= delivery_lat <= 90 and -180 <= delivery_lng <= 180):
+                return HttpResponse("Delivery map coordinates are out of range")
 
         try:
             user = User.objects.get(id=user_session["id"])
@@ -1329,6 +1350,9 @@ def booking(request):
             current_province=current_province,
             destination_province=destination_province,
             pickup_type=pickup_type,
+            delivery_lat=delivery_lat,
+            delivery_lng=delivery_lng,
+            delivery_address=delivery_address,
             total_price=total_price,
             contact_number=contact_number,
             status="pending",
@@ -1344,6 +1368,11 @@ def booking(request):
         {
             "cars": cars,
             "tomorrow": tomorrow,
+            "google_maps_api_key": getattr(settings, "GOOGLE_MAPS_API_KEY", ""),
+            "shop_name": getattr(settings, "SHOP_NAME", "Modern Drive Pickup Center"),
+            "shop_address": getattr(settings, "SHOP_ADDRESS", ""),
+            "shop_lat": getattr(settings, "SHOP_LAT", 13.7466),
+            "shop_lng": getattr(settings, "SHOP_LNG", 100.5393),
         },
     )
 

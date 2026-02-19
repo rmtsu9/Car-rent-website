@@ -72,4 +72,21 @@ STATICFILES_DIRS = [
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Google Maps config for booking step map.
+def _env_float(name, default):
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+SHOP_NAME = os.environ.get("SHOP_NAME", "Modern Drive Pickup Center")
+SHOP_ADDRESS = os.environ.get("SHOP_ADDRESS", "999 Rama I Rd, Pathum Wan, Bangkok 10330")
+SHOP_LAT = _env_float("SHOP_LAT", 13.7466)
+SHOP_LNG = _env_float("SHOP_LNG", 100.5393)
+
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

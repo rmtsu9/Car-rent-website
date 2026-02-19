@@ -361,6 +361,61 @@ body {
     margin-top: 4px;
 }
 
+.pickup-map-panel {
+    margin-top: 14px;
+    border: 1px solid #d0deed;
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fbff;
+}
+
+.pickup-map-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.pickup-map-head h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #0f4a86;
+}
+
+.pickup-map-help {
+    margin: 8px 0 10px;
+    font-size: 13px;
+    color: #4a6680;
+}
+
+.pickup-map-canvas {
+    width: 100%;
+    height: 320px;
+    border-radius: 10px;
+    border: 1px solid #c7daee;
+    background: #edf3fb;
+}
+
+.pickup-map-status {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #2f5376;
+}
+
+.pickup-map-status.error {
+    color: #b12828;
+}
+
+.map-clear-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+    display: none;
+}
+
+.map-clear-btn.show {
+    display: inline-flex;
+}
+
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -541,5 +596,9 @@ body {
 
     .step-indicator .step-label {
         font-size: 12px;
+    }
+
+    .pickup-map-canvas {
+        height: 260px;
     }
 }
