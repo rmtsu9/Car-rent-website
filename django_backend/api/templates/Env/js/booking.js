@@ -767,7 +767,7 @@ function bindEvents() {
 
 function logout() {
     if (confirm("Do you want to logout?")) {
-        window.location.href = "/logout/";
+        window.location.href = "/api/logout/";
     }
 }
 
