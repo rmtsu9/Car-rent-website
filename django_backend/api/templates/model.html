@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Car Models</title>
-    <link rel="stylesheet" href="{% static 'Env/css/model.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/model.css' %}?v=20260220b">
 </head>
 <body>
     <div
@@ -63,7 +63,13 @@
 
                         <label>
                             Fuel Type
-                            <input type="text" id="carFuelType" placeholder="Example: Petrol, Diesel, EV" required>
+                            <select id="carFuelType" required>
+                                <option value="">Select fuel type</option>
+                                <option value="Diesel">Diesel (ดีเซล)</option>
+                                <option value="EV">EV (ไฟฟ้า)</option>
+                                <option value="Petrol">Petrol (เบนซิน)</option>
+                                <option value="Hybrid">Hybrid (เบนซินไฮบริด)</option>
+                            </select>
                         </label>
 
                         <label>
@@ -73,7 +79,14 @@
 
                         <label>
                             Car Type
-                            <input type="text" id="carType" placeholder="Example: SUV, Sedan, Coupe" required>
+                            <select id="carType" required>
+                                <option value="">Select car type</option>
+                                <option value="Sedan">Sedan</option>
+                                <option value="Coupe">Coupe</option>
+                                <option value="SUV">SUV</option>
+                                <option value="Hatchback">Hatchback</option>
+                                <option value="Convertible">Convertible</option>
+                            </select>
                         </label>
 
                         <label>
@@ -122,11 +135,48 @@
                         <button type="button" class="btn-secondary" id="searchCarsBtn">Search</button>
                     </div>
                 </div>
+                <div class="filter-group">
+                    <label class="filter-field">
+                        Fuel Type
+                        <select id="filterFuelType">
+                            <option value="">All Fuel Types</option>
+                        </select>
+                    </label>
+                    <label class="filter-field">
+                        Type
+                        <select id="filterCarType">
+                            <option value="">All Types</option>
+                        </select>
+                    </label>
+                    <label class="filter-field">
+                        Seat
+                        <select id="filterSeatCapacity">
+                            <option value="">All Seats</option>
+                        </select>
+                    </label>
+                    <label class="filter-field">
+                        Sort By
+                        <select id="sortBy">
+                            <option value="price_per_day">Price per day</option>
+                            <option value="fuel_type">Fuel Type</option>
+                            <option value="car_type">Type</option>
+                            <option value="seat_capacity">Seat</option>
+                        </select>
+                    </label>
+                    <label class="filter-field">
+                        Sort Order
+                        <select id="sortOrder">
+                            <option value="asc">Ascending</option>
+                            <option value="desc">Descending</option>
+                        </select>
+                    </label>
+                    <button type="button" class="btn-secondary" id="clearFiltersBtn">Clear Filters</button>
+                </div>
                 <div id="carsContainer" class="cars-container"></div>
             </section>
         </main>
     </div>
 
-    <script src="{% static 'Env/js/model.js' %}"></script>
+    <script src="{% static 'Env/js/model.js' %}?v=20260220b"></script>
 </body>
 </html>

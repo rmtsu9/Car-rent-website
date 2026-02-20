@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
     <link
         rel="stylesheet"
-        href="{% static 'Env/vendor/leaflet/leaflet.css' %}"
+        href="{% static 'Env/vendor/leaflet/leaflet.css' %}?v=20260219c"
         onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';"
     >
-    <link rel="stylesheet" href="{% static 'Env/css/booking.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/booking.css' %}?v=20260219c">
 </head>
 <body>
     <div class="booking-container">
@@ -134,26 +134,12 @@
                                 <label for="currentProvince">Current Province (pickup point)</label>
                                 <select id="currentProvince" required>
                                     <option value="">-- Select province --</option>
-                                    <option value="Bangkok">Bangkok</option>
-                                    <option value="Chiang Mai">Chiang Mai</option>
-                                    <option value="Chiang Rai">Chiang Rai</option>
-                                    <option value="Phuket">Phuket</option>
-                                    <option value="Krabi">Krabi</option>
-                                    <option value="Pattaya">Pattaya</option>
-                                    <option value="Rayong">Rayong</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="destinationProvince">Destination Province</label>
                                 <select id="destinationProvince" required>
                                     <option value="">-- Select province --</option>
-                                    <option value="Bangkok">Bangkok</option>
-                                    <option value="Chiang Mai">Chiang Mai</option>
-                                    <option value="Chiang Rai">Chiang Rai</option>
-                                    <option value="Phuket">Phuket</option>
-                                    <option value="Krabi">Krabi</option>
-                                    <option value="Pattaya">Pattaya</option>
-                                    <option value="Rayong">Rayong</option>
                                 </select>
                             </div>
                         </div>
@@ -273,9 +259,9 @@
 
     <script src="{% static 'Env/js/bootstrap.bundle.min.js' %}"></script>
     <script
-        src="{% static 'Env/vendor/leaflet/leaflet.js' %}"
+        src="{% static 'Env/vendor/leaflet/leaflet.js' %}?v=20260219c"
         onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';"
     ></script>
-    <script src="{% static 'Env/js/booking.js' %}"></script>
+    <script src="{% static 'Env/js/booking.js' %}?v=20260220d"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="{% static 'Env/css/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/admin.css' %}?v=20260220a">
 </head>
 <body>
     <div
@@ -16,8 +16,11 @@
         data-admins-url="{% url 'admin_admins_api' %}"
         data-orders-url="{% url 'admin_orders_api' %}"
         data-order-approve-url-template="{% url 'admin_order_stage_approve_api' 0 %}"
+        data-order-cancel-url-template="{% url 'admin_order_cancel_api' 0 %}"
         data-history-url="{% url 'admin_history_api' %}"
         data-model-url="{% url 'model' %}"
+        data-shop-lat="{{ shop_lat }}"
+        data-shop-lng="{{ shop_lng }}"
     >
         <aside class="admin-nav">
             <div class="brand">
@@ -270,6 +273,6 @@
         </main>
     </div>
 
-    <script src="{% static 'Env/js/admin.js' %}"></script>
+    <script src="{% static 'Env/js/admin.js' %}?v=20260220b"></script>
 </body>
 </html>

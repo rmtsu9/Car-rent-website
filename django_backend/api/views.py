@@ -33,6 +33,28 @@ ORDER_STAGE_ACTION_TEXT = {
     "awaiting_full_payment": "Confirm full payment and move to History",
 }
 
+FUEL_TYPE_ALIASES = {
+    "diesel": "Diesel",
+    "ดีเซล": "Diesel",
+    "ev": "EV",
+    "electric": "EV",
+    "ไฟฟ้า": "EV",
+    "petrol": "Petrol",
+    "gasoline": "Petrol",
+    "เบนซิน": "Petrol",
+    "hybrid": "Hybrid",
+    "ไฮบริด": "Hybrid",
+    "เบนซินไฮบริด": "Hybrid",
+}
+
+CAR_TYPE_ALIASES = {
+    "sedan": "Sedan",
+    "coupe": "Coupe",
+    "suv": "SUV",
+    "hatchback": "Hatchback",
+    "convertible": "Convertible",
+}
+
 
 def _has_overlapping_booking(car, start_date, end_date):
     return Booking.objects.filter(
@@ -93,6 +115,21 @@ def _clean_text(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _normalize_choice(value, aliases):
+    raw = _clean_text(value)
+    if not raw:
+        return ""
+    return aliases.get(raw.lower(), "")
+
+
+def _normalize_fuel_type(value):
+    return _normalize_choice(value, FUEL_TYPE_ALIASES)
+
+
+def _normalize_car_type(value):
+    return _normalize_choice(value, CAR_TYPE_ALIASES)
 
 
 def _to_int(value, field_name, min_value=0, required=True):
@@ -257,6 +294,17 @@ def _create_user_notification(user, booking, title, message):
     )
 
 
+def _cleanup_closed_booking_notifications(user_id):
+    """Remove notifications tied to bookings that are already completed/cancelled."""
+    if not user_id:
+        return 0
+
+    deleted_count, _ = Notification.objects.filter(user_id=user_id).filter(
+        Q(booking__order_stage="completed") | Q(booking__status="rejected")
+    ).delete()
+    return deleted_count
+
+
 def _apply_booking_search(queryset, keyword):
     query = _clean_text(keyword)
     if not query:
@@ -415,7 +463,17 @@ def admin_page(request):
     if user.get("role") != "admin":
         return HttpResponse("Unauthorized", status=401)
 
-    return render(request, "admin.html", {"user": user})
+    return render(
+        request,
+        "admin.html",
+        {
+            "user": user,
+            "shop_name": getattr(settings, "SHOP_NAME", "TripCraft Car Rent Pickup Center"),
+            "shop_address": getattr(settings, "SHOP_ADDRESS", ""),
+            "shop_lat": getattr(settings, "SHOP_LAT", 13.7466),
+            "shop_lng": getattr(settings, "SHOP_LNG", 100.5393),
+        },
+    )
 
 
 def model_page(request):
@@ -484,7 +542,7 @@ def admin_dashboard_api(request):
         "total_cars": Car.objects.count(),
         "active_cars": Car.objects.filter(is_active=True).count(),
         "total_orders": Booking.objects.count(),
-        "incoming_orders": Booking.objects.exclude(order_stage="completed").count(),
+        "incoming_orders": Booking.objects.exclude(order_stage="completed").exclude(status="rejected").count(),
         "pending_orders": Booking.objects.filter(status="pending").count(),
         "completed_orders": Booking.objects.filter(order_stage="completed").count(),
         "completed_revenue": completed_revenue,
@@ -816,9 +874,11 @@ def admin_cars_api(request):
         return payload_error
 
     name = _clean_text(payload.get("name"))
-    fuel_type = _clean_text(payload.get("fuel_type"))
+    raw_fuel_type = _clean_text(payload.get("fuel_type"))
+    fuel_type = _normalize_fuel_type(raw_fuel_type)
     fuel_consumption = _clean_text(payload.get("fuel_consumption"))
-    car_type = _clean_text(payload.get("car_type"))
+    raw_car_type = _clean_text(payload.get("car_type"))
+    car_type = _normalize_car_type(raw_car_type)
 
     price_per_day, error_message = _to_int(payload.get("price_per_day"), "price_per_day", min_value=0)
     if error_message:
@@ -835,6 +895,24 @@ def admin_cars_api(request):
     horsepower, error_message = _to_int(payload.get("horsepower"), "horsepower", min_value=0)
     if error_message:
         return JsonResponse({"success": False, "message": error_message}, status=400)
+
+    if raw_fuel_type and not fuel_type:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "fuel_type must be one of: Diesel, EV, Petrol, Hybrid",
+            },
+            status=400,
+        )
+
+    if raw_car_type and not car_type:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "car_type must be one of: Sedan, Coupe, SUV, Hatchback, Convertible",
+            },
+            status=400,
+        )
 
     if not name or not fuel_type or not fuel_consumption or not car_type:
         return JsonResponse(
@@ -908,9 +986,15 @@ def admin_car_detail_api(request, car_id):
             update_fields.append("price_per_day")
 
         if "fuel_type" in payload:
-            fuel_type = _clean_text(payload.get("fuel_type"))
+            fuel_type = _normalize_fuel_type(payload.get("fuel_type"))
             if not fuel_type:
-                return JsonResponse({"success": False, "message": "fuel_type is required"}, status=400)
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "fuel_type must be one of: Diesel, EV, Petrol, Hybrid",
+                    },
+                    status=400,
+                )
             car.fuel_type = fuel_type
             update_fields.append("fuel_type")
 
@@ -922,9 +1006,15 @@ def admin_car_detail_api(request, car_id):
             update_fields.append("fuel_consumption")
 
         if "car_type" in payload:
-            car_type = _clean_text(payload.get("car_type"))
+            car_type = _normalize_car_type(payload.get("car_type"))
             if not car_type:
-                return JsonResponse({"success": False, "message": "car_type is required"}, status=400)
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": "car_type must be one of: Sedan, Coupe, SUV, Hatchback, Convertible",
+                    },
+                    status=400,
+                )
             car.car_type = car_type
             update_fields.append("car_type")
 
@@ -1162,6 +1252,54 @@ def admin_order_stage_approve_api(request, booking_id):
     )
 
 
+def admin_order_cancel_api(request, booking_id):
+    _, error = _require_admin_json(request)
+    if error:
+        return error
+
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
+
+    booking = Booking.objects.select_related("user", "car").filter(id=booking_id).first()
+    if booking is None:
+        return JsonResponse({"success": False, "message": "Order not found"}, status=404)
+
+    if booking.order_stage == "completed":
+        return JsonResponse(
+            {"success": False, "message": "Completed orders cannot be cancelled"},
+            status=400,
+        )
+
+    if booking.status == "rejected":
+        return JsonResponse(
+            {
+                "success": True,
+                "message": "This order is already cancelled",
+                "data": _serialize_booking(booking),
+            }
+        )
+
+    booking.status = "rejected"
+    booking.completed_at = timezone.now()
+    booking.save(update_fields=["status", "completed_at"])
+
+    _create_user_notification(
+        user=booking.user,
+        booking=booking,
+        title=f"Order #{booking.id}: Cancelled by admin",
+        message="Admin cancelled this order. Please contact support if you need more details.",
+    )
+
+    booking.refresh_from_db()
+    return JsonResponse(
+        {
+            "success": True,
+            "message": "Order cancelled successfully",
+            "data": _serialize_booking(booking),
+        }
+    )
+
+
 def admin_orders_api(request):
     _, error = _require_admin_json(request)
     if error:
@@ -1170,7 +1308,12 @@ def admin_orders_api(request):
     if request.method != "GET":
         return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
-    bookings = Booking.objects.select_related("user", "car").exclude(order_stage="completed").order_by("-created_at")
+    bookings = (
+        Booking.objects.select_related("user", "car")
+        .exclude(order_stage="completed")
+        .exclude(status="rejected")
+        .order_by("-created_at")
+    )
 
     status = _clean_text(request.GET.get("status"))
     stage = _clean_text(request.GET.get("stage"))
@@ -1194,7 +1337,11 @@ def admin_history_api(request):
     if request.method != "GET":
         return JsonResponse({"success": False, "message": "Method not allowed"}, status=405)
 
-    bookings = Booking.objects.select_related("user", "car").filter(order_stage="completed").order_by("-completed_at", "-created_at")
+    bookings = (
+        Booking.objects.select_related("user", "car")
+        .filter(Q(order_stage="completed") | Q(status="rejected"))
+        .order_by("-completed_at", "-created_at")
+    )
     bookings = _apply_booking_search(bookings, request.GET.get("q"))
 
     return JsonResponse({"success": True, "data": [_serialize_booking(booking) for booking in bookings]})
@@ -1215,6 +1362,7 @@ def user_notifications_api(request):
         limit = 20
 
     limit = max(1, min(limit, 50))
+    _cleanup_closed_booking_notifications(user_session["id"])
     queryset = Notification.objects.filter(user_id=user_session["id"]).select_related("booking")
     notifications = list(queryset[:limit])
     unread_count = queryset.filter(is_read=False).count()
@@ -1439,7 +1587,8 @@ def history(request):
         return redirect("login")
 
     history_bookings = (
-        Booking.objects.filter(user_id=user["id"], order_stage="completed")
+        Booking.objects.filter(user_id=user["id"])
+        .filter(Q(order_stage="completed") | Q(status="rejected"))
         .select_related("car")
         .order_by("-completed_at", "-created_at")
     )
@@ -1463,6 +1612,7 @@ def order(request):
 
     bookings = (
         Booking.objects.filter(user_id=user_session["id"])
+        .exclude(status="rejected")
         .select_related("car")
         .order_by("-created_at")
     )
@@ -1486,6 +1636,10 @@ def order(request):
             "selected_booking": selected_booking,
             "selected_progress": selected_progress,
             "selected_stage_action": stage_action,
+            "shop_name": getattr(settings, "SHOP_NAME", "TripCraft Car Rent Pickup Center"),
+            "shop_address": getattr(settings, "SHOP_ADDRESS", ""),
+            "shop_lat": getattr(settings, "SHOP_LAT", 13.7466),
+            "shop_lng": getattr(settings, "SHOP_LNG", 100.5393),
         },
     )
 
@@ -1525,6 +1679,38 @@ def advance_order_stage(request, booking_id):
 
     booking.save(update_fields=update_fields)
     return redirect(f"{reverse('order')}?booking_id={booking.id}")
+
+
+def cancel_order(request, booking_id):
+    user_session = request.session.get("user")
+    if not user_session:
+        return redirect("login")
+
+    if request.method != "POST":
+        return HttpResponse("Method not allowed", status=405)
+
+    booking = Booking.objects.filter(id=booking_id, user_id=user_session["id"]).first()
+    if booking is None:
+        return HttpResponse("Order not found", status=404)
+
+    if booking.order_stage == "completed":
+        return redirect(f"{reverse('order')}?booking_id={booking.id}")
+
+    if booking.status == "rejected":
+        return redirect("history")
+
+    booking.status = "rejected"
+    booking.completed_at = timezone.now()
+    booking.save(update_fields=["status", "completed_at"])
+
+    _create_user_notification(
+        user=booking.user,
+        booking=booking,
+        title=f"Order #{booking.id}: Cancelled",
+        message="You cancelled this order.",
+    )
+
+    return redirect("history")
 
 
 # Profile view

@@ -19,17 +19,48 @@ body {
     gap: 18px;
 }
 
-.back-button a {
+.back-button {
+    display: flex;
+}
+
+.back-booking-btn {
+    color: #0f5ba1;
+    text-decoration: none;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    color: #1967b3;
-    background: #ffffff;
-    border: 1px solid #cfe0f1;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-weight: 600;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid #b8d5f1;
+    background: linear-gradient(140deg, #f8fcff 0%, #e8f2ff 100%);
+    box-shadow: 0 8px 20px rgba(18, 88, 153, 0.12);
+    transition: 0.2s ease;
+}
+
+.back-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f5ba1;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.back-booking-btn:hover {
+    color: #0d4b86;
+    border-color: #8abbe6;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(18, 88, 153, 0.18);
+}
+
+.back-booking-btn:focus-visible {
+    outline: 3px solid rgba(19, 102, 179, 0.28);
+    outline-offset: 2px;
 }
 
 .order-header {
@@ -166,6 +197,81 @@ body {
     opacity: 0.96;
 }
 
+.notification-popup-host {
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 22px 12px;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(17, 45, 72, 0);
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.notification-popup-host.show {
+    opacity: 1;
+    pointer-events: auto;
+    background: rgba(17, 45, 72, 0.2);
+}
+
+.notification-popup-card {
+    width: min(500px, calc(100vw - 24px));
+    background: #ffffff;
+    border: 1px solid #cde1f4;
+    border-radius: 12px;
+    box-shadow: 0 14px 34px rgba(17, 70, 116, 0.28);
+    padding: 12px 14px;
+    transform: translateY(-12px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.notification-popup-card.show {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.notification-popup-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-popup-title {
+    color: #0f497f;
+    font-size: 15px;
+}
+
+.notification-popup-close {
+    border: 1px solid #c4d9ec;
+    background: #f0f7ff;
+    color: #1f5f95;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.notification-popup-close:hover {
+    background: #e4f1ff;
+}
+
+.notification-popup-message {
+    margin: 10px 0 6px;
+    color: #35516c;
+    font-size: 14px;
+}
+
+.notification-popup-time {
+    color: #58748e;
+    font-size: 12px;
+}
+
 .focus-card,
 .order-list-card,
 .empty-state {
@@ -204,6 +310,12 @@ body {
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
+}
+
+.stage-badge.cancelled {
+    background: #fff1f1;
+    border-color: #e6bcbc;
+    color: #b23b3b;
 }
 
 .details-grid {
@@ -321,6 +433,19 @@ body {
     margin-top: 16px;
 }
 
+.status-actions {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.status-action-form,
+.cancel-order-form {
+    margin: 0;
+}
+
 .delivery-map-box {
     margin-top: 14px;
     display: grid;
@@ -388,6 +513,21 @@ body {
 
 .btn-secondary:hover {
     background: #dceeff;
+}
+
+.btn-cancel-order {
+    border: 1px solid #e7b4b4;
+    border-radius: 10px;
+    background: #fff1f1;
+    color: #b53a3a;
+    font-weight: 700;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.btn-cancel-order:hover {
+    background: #ffe4e4;
 }
 
 .order-list-card h3 {
@@ -497,5 +637,14 @@ body {
 
     .order-item {
         flex-direction: column;
+    }
+
+    .back-booking-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .notification-popup-card {
+        width: calc(100vw - 20px);
     }
 }

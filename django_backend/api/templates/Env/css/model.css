@@ -96,14 +96,17 @@ label {
     font-weight: 600;
 }
 
-input {
+input,
+select {
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 10px;
     font-size: 14px;
+    background: #fff;
 }
 
-input:focus {
+input:focus,
+select:focus {
     outline: none;
     border-color: #7fa6cd;
 }
@@ -184,10 +187,31 @@ input:focus {
 .search-group {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .search-group input {
     min-width: 250px;
+}
+
+.filter-group {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: end;
+}
+
+.filter-field {
+    display: grid;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+#clearFiltersBtn {
+    width: 100%;
 }
 
 .cars-container {
@@ -356,6 +380,10 @@ input:focus {
         flex: 1;
     }
 
+    .filter-group {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .image-row {
         grid-template-columns: 1fr;
     }
@@ -367,6 +395,12 @@ input:focus {
 
     .add-image-form,
     .import-image-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .filter-group {
         grid-template-columns: 1fr;
     }
 }

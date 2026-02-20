@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     bindAdvanceStageConfirm();
+    bindCancelOrderConfirm();
     bindDeliveryMapButtons();
     initNotifications();
 });
@@ -20,7 +21,7 @@ function bindDeliveryMapButtons() {
             const lng = parseCoordinate(button.dataset.deliveryLng);
 
             if (lat === null || lng === null) {
-                window.alert("Delivery map pin is unavailable for this order.");
+                window.alert("Map location is unavailable for this order.");
                 return;
             }
 
@@ -46,6 +47,20 @@ function bindAdvanceStageConfirm() {
         }
 
         if (!window.confirm(confirmMessage)) {
+            event.preventDefault();
+        }
+    });
+}
+
+function bindCancelOrderConfirm() {
+    const cancelButton = document.querySelector(".cancel-order-btn");
+    if (!cancelButton) {
+        return;
+    }
+
+    cancelButton.addEventListener("click", (event) => {
+        const ok = window.confirm("Cancel this order? This action cannot be undone.");
+        if (!ok) {
             event.preventDefault();
         }
     });
@@ -114,6 +129,120 @@ function initNotifications() {
         wrapper.className = "notification-toast-wrap";
         document.body.appendChild(wrapper);
         return wrapper;
+    }
+
+    function ensurePopupHost() {
+        let host = document.getElementById("notificationPopupHost");
+        if (host) {
+            return host;
+        }
+
+        host = document.createElement("div");
+        host.id = "notificationPopupHost";
+        host.className = "notification-popup-host";
+        document.body.appendChild(host);
+        return host;
+    }
+
+    const popupQueue = [];
+    let popupIsShowing = false;
+
+    function showPopupNotification(item) {
+        popupQueue.push(item);
+        flushPopupQueue();
+    }
+
+    function flushPopupQueue() {
+        if (popupIsShowing || !popupQueue.length) {
+            return;
+        }
+
+        popupIsShowing = true;
+        const host = ensurePopupHost();
+        const item = popupQueue.shift();
+
+        const card = document.createElement("div");
+        card.className = "notification-popup-card";
+
+        const head = document.createElement("div");
+        head.className = "notification-popup-head";
+
+        const title = document.createElement("strong");
+        title.className = "notification-popup-title";
+        title.textContent = item.title || "Notification";
+
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "notification-popup-close";
+        closeButton.setAttribute("aria-label", "Close notification");
+        closeButton.textContent = "Close";
+
+        const message = document.createElement("p");
+        message.className = "notification-popup-message";
+        message.textContent = item.message || "";
+
+        const time = document.createElement("small");
+        time.className = "notification-popup-time";
+        time.textContent = item.created_at || "";
+
+        head.appendChild(title);
+        head.appendChild(closeButton);
+        card.appendChild(head);
+        card.appendChild(message);
+        card.appendChild(time);
+
+        let closed = false;
+        let autoCloseTimer = null;
+        let removeTimer = null;
+
+        const onEscape = (event) => {
+            if (event.key === "Escape") {
+                closePopup();
+            }
+        };
+
+        const closePopup = () => {
+            if (closed) {
+                return;
+            }
+            closed = true;
+
+            if (autoCloseTimer) {
+                window.clearTimeout(autoCloseTimer);
+            }
+            if (removeTimer) {
+                window.clearTimeout(removeTimer);
+            }
+
+            document.removeEventListener("keydown", onEscape);
+            host.classList.remove("show");
+            card.classList.remove("show");
+
+            removeTimer = window.setTimeout(() => {
+                card.remove();
+                if (!host.children.length) {
+                    host.classList.remove("show");
+                }
+                popupIsShowing = false;
+                flushPopupQueue();
+            }, 220);
+        };
+
+        closeButton.addEventListener("click", closePopup);
+        host.onclick = (event) => {
+            if (event.target === host) {
+                closePopup();
+            }
+        };
+        document.addEventListener("keydown", onEscape);
+
+        host.classList.add("show");
+        host.appendChild(card);
+        window.requestAnimationFrame(() => {
+            card.classList.add("show");
+        });
+
+        autoCloseTimer = window.setTimeout(closePopup, 5500);
     }
 
     function showToast(title, message) {
@@ -201,6 +330,7 @@ function initNotifications() {
             newItems.forEach((item) => {
                 announcedNotificationIds.add(item.id);
                 showToast(item.title || "Notification", item.message || "");
+                showPopupNotification(item);
             });
 
             await requestJson(markReadUrl, "POST", {

@@ -396,6 +396,128 @@ body {
     background: #edf3fb;
 }
 
+/* Leaflet fallback styles (keeps map usable if leaflet.css fails to apply) */
+.pickup-map-canvas.leaflet-container {
+    position: relative;
+    overflow: hidden;
+    outline: none;
+    background: #dbe8f6;
+}
+
+.pickup-map-canvas .leaflet-pane,
+.pickup-map-canvas .leaflet-tile,
+.pickup-map-canvas .leaflet-marker-icon,
+.pickup-map-canvas .leaflet-marker-shadow,
+.pickup-map-canvas .leaflet-tile-container,
+.pickup-map-canvas .leaflet-pane > svg,
+.pickup-map-canvas .leaflet-pane > canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.pickup-map-canvas .leaflet-tile,
+.pickup-map-canvas .leaflet-marker-icon,
+.pickup-map-canvas .leaflet-marker-shadow {
+    max-width: none !important;
+    max-height: none !important;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.pickup-map-canvas .leaflet-pane {
+    z-index: 400;
+}
+
+.pickup-map-canvas .leaflet-tile-pane {
+    z-index: 200;
+}
+
+.pickup-map-canvas .leaflet-overlay-pane {
+    z-index: 400;
+}
+
+.pickup-map-canvas .leaflet-shadow-pane {
+    z-index: 500;
+}
+
+.pickup-map-canvas .leaflet-marker-pane {
+    z-index: 600;
+}
+
+.pickup-map-canvas .leaflet-tooltip-pane {
+    z-index: 650;
+}
+
+.pickup-map-canvas .leaflet-popup-pane {
+    z-index: 700;
+}
+
+.pickup-map-canvas .leaflet-top,
+.pickup-map-canvas .leaflet-bottom {
+    position: absolute;
+    z-index: 800;
+    pointer-events: none;
+}
+
+.pickup-map-canvas .leaflet-top {
+    top: 0;
+}
+
+.pickup-map-canvas .leaflet-bottom {
+    bottom: 0;
+}
+
+.pickup-map-canvas .leaflet-right {
+    right: 0;
+}
+
+.pickup-map-canvas .leaflet-left {
+    left: 0;
+}
+
+.pickup-map-canvas .leaflet-control {
+    position: relative;
+    z-index: 800;
+    pointer-events: auto;
+    margin: 10px;
+}
+
+.pickup-map-canvas .leaflet-bar {
+    border-radius: 4px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.34);
+}
+
+.pickup-map-canvas .leaflet-bar a {
+    display: block;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    text-decoration: none;
+    color: #1f2c3b;
+    font-weight: 700;
+    border-bottom: 1px solid #d1dbe6;
+}
+
+.pickup-map-canvas .leaflet-bar a:last-child {
+    border-bottom: none;
+}
+
+.pickup-map-canvas .leaflet-bar a:hover {
+    background: #f3f7fb;
+}
+
+.pickup-map-canvas .leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #2f4f6d;
+    font-size: 11px;
+}
+
 .pickup-map-status {
     margin: 8px 0 0;
     font-size: 13px;

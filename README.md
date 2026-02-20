@@ -2,6 +2,25 @@
 
 Car rental web application with public browsing, customer booking flow, admin dashboard, order-stage approvals, notifications, and map-based delivery pin.
 
+## Latest Update (2026-02-20)
+- Booking province list expanded for all provinces in `Central`, `North`, and `Northeast`.
+- Model page now supports client-side filter + sorting:
+  - Search by name/type/fuel
+  - Filter by `Fuel Type`, `Type`, `Seat`
+  - Sort by `Price per day`, `Fuel Type`, `Type`, `Seat`
+- `Open map` now supports both pickup types:
+  - `Self Pickup` -> shop location map
+  - `Delivery` -> customer pinned location map
+- Cancel flow is complete on both sides:
+  - Customer can cancel from Order page
+  - Admin can cancel from Incoming Orders
+  - Cancelled orders move to History
+- Notifications improved:
+  - Real-time toast + popup notification on Order page
+  - Notifications linked to `completed/rejected` orders are auto-removed
+- Navigation consistency:
+  - `Back to Booking` button style is now aligned across Profile/Order/History
+
 ## Highlights
 - Public pages without login: `Index`, `Model`
 - Role-based access for admin operations
@@ -9,7 +28,8 @@ Car rental web application with public browsing, customer booking flow, admin da
 - Admin flow: manage users/admins/cars, approve required order stages, view history
 - Car management supports image URL and direct image import from device
 - Map integration with Leaflet.js + OpenStreetMap (no Google Maps API key required)
-- Delivery map pin is shown to admin and customer via `Open delivery map` button
+- `Open map` is available for both `Self Pickup` and `Delivery` orders
+- Model page supports search, filter, and sorting
 
 ## Stack
 - Frontend: HTML, CSS, JavaScript
@@ -40,6 +60,8 @@ Car rental web application with public browsing, customer booking flow, admin da
 4. `Pay full amount` (customer confirms, then order moves to History)
 
 Notifications are auto-created for customer when admin approves stage 1 and stage 3.
+
+Order can be cancelled by customer or admin before completion. Completed and cancelled orders are stored in History.
 
 ## Project Structure
 ```text
@@ -164,6 +186,33 @@ $env:SHOP_LNG="100.5018"
 python manage.py runserver
 ```
 
+## Province Coverage (Booking Step 2)
+Both fields below now include all provinces in:
+- `Central`
+- `North`
+- `Northeast`
+
+Fields:
+- `Current Province (pickup point)`
+- `Destination Province`
+
+## Car Data Rules
+Admin Car Form now enforces fixed values for these fields:
+
+- `Fuel Type`:
+  - `Diesel` (ดีเซล)
+  - `EV` (ไฟฟ้า)
+  - `Petrol` (เบนซิน)
+  - `Hybrid` (เบนซินไฮบริด)
+- `Car Type`:
+  - `Sedan`
+  - `Coupe`
+  - `SUV`
+  - `Hatchback`
+  - `Convertible`
+
+Server-side API validation also enforces these values for create/update car endpoints.
+
 ## Admin Capabilities
 - Manage users:
   - Create, search, update, delete
@@ -178,8 +227,9 @@ python manage.py runserver
   - View incoming orders
   - Approve stage `Waiting for callback`
   - Approve stage `Waiting for pickup or delivery`
-  - Open delivery pin on OpenStreetMap
-- View completed order history
+  - Cancel order
+  - Open map on OpenStreetMap for both pickup types
+- View completed and cancelled order history
 
 ## API Overview
 Public/customer endpoints:
@@ -188,6 +238,7 @@ Public/customer endpoints:
 - `GET /api/notifications/`
 - `POST /api/notifications/mark-read/`
 - `POST /api/order/<booking_id>/advance/`
+- `POST /api/order/<booking_id>/cancel/`
 - `POST /api/profile/update-phone/`
 - `POST /api/profile/change-password/`
 
@@ -204,6 +255,7 @@ Admin endpoints:
 - `PUT,DELETE /api/admin/api/cars/<id>/images/<image_id>/`
 - `GET /api/admin/api/orders/`
 - `POST /api/admin/api/orders/<booking_id>/approve-stage/`
+- `POST /api/admin/api/orders/<booking_id>/cancel/`
 - `GET /api/admin/api/history/`
 
 ## SQLrequirements Coverage
@@ -212,7 +264,7 @@ Admin endpoints:
 - Create database: `car_rent`
 - Seed demo records after migrations:
   - `api_user` (admin/customer)
-  - `api_car` (sample cars)
+  - `api_car` (sample cars + additional XLSX-based seed set)
   - `api_carimage` (sample images)
 - Includes optional manual schema reference for `api_user` and `api_car`
 
@@ -278,6 +330,13 @@ cd django_backend
 python manage.py migrate
 psql -U postgres -h localhost -f ..\SQLrequirements.txt
 ```
+
+### Car API validation error for `fuel_type` or `car_type`
+Cause: value is not in allowed set.
+
+Use one of:
+- `fuel_type`: `Diesel`, `EV`, `Petrol`, `Hybrid`
+- `car_type`: `Sedan`, `Coupe`, `SUV`, `Hatchback`, `Convertible`
 
 ## Security Notes (Important)
 - Passwords are stored as plain text in current implementation.

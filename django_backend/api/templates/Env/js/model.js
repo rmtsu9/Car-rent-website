@@ -13,6 +13,8 @@
 
     const state = {
         cars: [],
+        visibleCars: [],
+        searchQuery: "",
     };
 
     function getCSRFToken() {
@@ -109,6 +111,61 @@
         return `/api/${raw}`;
     }
 
+    function normalizeText(value) {
+        return String(value || "").trim().toLowerCase();
+    }
+
+    function sortTextValues(values) {
+        return Array.from(new Set(values.filter((value) => normalizeText(value) !== ""))).sort(
+            (left, right) => String(left).localeCompare(String(right), undefined, { sensitivity: "base" })
+        );
+    }
+
+    function sortNumberValues(values) {
+        return Array.from(
+            new Set(
+                values
+                    .map((value) => Number(value))
+                    .filter((value) => Number.isFinite(value))
+            )
+        ).sort((left, right) => left - right);
+    }
+
+    function setSelectOptions(selectElement, values, emptyLabel) {
+        if (!selectElement) {
+            return;
+        }
+
+        const previousValue = String(selectElement.value || "");
+        selectElement.innerHTML = "";
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = emptyLabel;
+        selectElement.appendChild(emptyOption);
+
+        values.forEach((value) => {
+            const option = document.createElement("option");
+            option.value = String(value);
+            option.textContent = String(value);
+            selectElement.appendChild(option);
+        });
+
+        if (values.some((value) => String(value) === previousValue)) {
+            selectElement.value = previousValue;
+        }
+    }
+
+    function refreshFilterOptions() {
+        const fuelValues = sortTextValues(state.cars.map((car) => car.fuel_type || ""));
+        const typeValues = sortTextValues(state.cars.map((car) => car.car_type || ""));
+        const seatValues = sortNumberValues(state.cars.map((car) => car.seat_capacity));
+
+        setSelectOptions(document.getElementById("filterFuelType"), fuelValues, "All Fuel Types");
+        setSelectOptions(document.getElementById("filterCarType"), typeValues, "All Types");
+        setSelectOptions(document.getElementById("filterSeatCapacity"), seatValues, "All Seats");
+    }
+
     function resetCarForm() {
         if (!isAdmin) {
             return;
@@ -178,14 +235,62 @@
             .join("");
     }
 
+    function applyFiltersAndSort() {
+        const fuelFilter = normalizeText(document.getElementById("filterFuelType")?.value);
+        const typeFilter = normalizeText(document.getElementById("filterCarType")?.value);
+        const seatFilter = document.getElementById("filterSeatCapacity")?.value || "";
+        const sortBy = document.getElementById("sortBy")?.value || "price_per_day";
+        const sortOrder = document.getElementById("sortOrder")?.value === "desc" ? "desc" : "asc";
+
+        const filteredCars = state.cars.filter((car) => {
+            if (fuelFilter && normalizeText(car.fuel_type) !== fuelFilter) {
+                return false;
+            }
+
+            if (typeFilter && normalizeText(car.car_type) !== typeFilter) {
+                return false;
+            }
+
+            if (seatFilter && String(car.seat_capacity) !== String(seatFilter)) {
+                return false;
+            }
+
+            return true;
+        });
+
+        const numericSortFields = new Set(["price_per_day", "seat_capacity"]);
+        filteredCars.sort((left, right) => {
+            let compareResult = 0;
+
+            if (numericSortFields.has(sortBy)) {
+                compareResult = Number(left[sortBy] || 0) - Number(right[sortBy] || 0);
+            } else {
+                compareResult = String(left[sortBy] || "").localeCompare(String(right[sortBy] || ""), undefined, {
+                    sensitivity: "base",
+                });
+            }
+
+            if (compareResult === 0) {
+                compareResult = String(left.name || "").localeCompare(String(right.name || ""), undefined, {
+                    sensitivity: "base",
+                });
+            }
+
+            return sortOrder === "desc" ? compareResult * -1 : compareResult;
+        });
+
+        state.visibleCars = filteredCars;
+        renderCars();
+    }
+
     function renderCars() {
         const container = document.getElementById("carsContainer");
-        if (!state.cars.length) {
-            container.innerHTML = `<div class="empty-state">No cars found</div>`;
+        if (!state.visibleCars.length) {
+            container.innerHTML = `<div class="empty-state">No cars found with current filters</div>`;
             return;
         }
 
-        container.innerHTML = state.cars
+        container.innerHTML = state.visibleCars
             .map((car) => {
                 const adminActions = isAdmin
                     ? `
@@ -243,9 +348,12 @@
     }
 
     async function loadCars(query = "") {
-        const data = await apiRequest(carsCollectionUrl(query));
-        state.cars = data;
-        renderCars();
+        const safeQuery = String(query || "").trim();
+        const data = await apiRequest(carsCollectionUrl(safeQuery));
+        state.searchQuery = safeQuery;
+        state.cars = Array.isArray(data) ? data : [];
+        refreshFilterOptions();
+        applyFiltersAndSort();
     }
 
     async function saveCar(event) {
@@ -280,7 +388,7 @@
                 await apiRequest(urls.adminCars, "POST", payload);
             }
             resetCarForm();
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -297,7 +405,7 @@
 
         try {
             await apiRequest(carDetailUrl(carId), "DELETE");
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -325,7 +433,7 @@
             await apiRequest(carImageUrl(carId), "POST", payload);
             imageUrlField.value = "";
             captionField.value = "";
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -354,7 +462,7 @@
             await uploadFileRequest(carImageUploadUrl(carId), formData);
             fileField.value = "";
             captionField.value = "";
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -388,7 +496,7 @@
                 image_url: nextUrl.trim(),
                 caption: nextCaption.trim(),
             });
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -405,7 +513,7 @@
 
         try {
             await apiRequest(carImageDetailUrl(carId, imageId), "DELETE");
-            await loadCars(document.getElementById("carSearchInput").value.trim());
+            await loadCars(state.searchQuery);
         } catch (error) {
             alert(error.message);
         }
@@ -413,8 +521,16 @@
 
     function bindEvents() {
         const searchInput = document.getElementById("carSearchInput");
+        const fuelFilterSelect = document.getElementById("filterFuelType");
+        const typeFilterSelect = document.getElementById("filterCarType");
+        const seatFilterSelect = document.getElementById("filterSeatCapacity");
+        const sortBySelect = document.getElementById("sortBy");
+        const sortOrderSelect = document.getElementById("sortOrder");
+        const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
         document.getElementById("searchCarsBtn").addEventListener("click", () => {
-            loadCars(searchInput.value.trim()).catch((error) => alert(error.message));
+            state.searchQuery = searchInput.value.trim();
+            loadCars(state.searchQuery).catch((error) => alert(error.message));
         });
 
         searchInput.addEventListener("keydown", (event) => {
@@ -422,8 +538,40 @@
                 return;
             }
             event.preventDefault();
-            loadCars(event.target.value.trim()).catch((error) => alert(error.message));
+            state.searchQuery = event.target.value.trim();
+            loadCars(state.searchQuery).catch((error) => alert(error.message));
         });
+
+        [fuelFilterSelect, typeFilterSelect, seatFilterSelect, sortBySelect, sortOrderSelect]
+            .filter(Boolean)
+            .forEach((element) => {
+                element.addEventListener("change", applyFiltersAndSort);
+            });
+
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener("click", () => {
+                searchInput.value = "";
+                state.searchQuery = "";
+
+                if (fuelFilterSelect) {
+                    fuelFilterSelect.value = "";
+                }
+                if (typeFilterSelect) {
+                    typeFilterSelect.value = "";
+                }
+                if (seatFilterSelect) {
+                    seatFilterSelect.value = "";
+                }
+                if (sortBySelect) {
+                    sortBySelect.value = "price_per_day";
+                }
+                if (sortOrderSelect) {
+                    sortOrderSelect.value = "asc";
+                }
+
+                loadCars("").catch((error) => alert(error.message));
+            });
+        }
 
         if (!isAdmin) {
             return;

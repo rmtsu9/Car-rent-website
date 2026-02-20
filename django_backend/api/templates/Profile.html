@@ -6,7 +6,7 @@
     <title>Profile Settings</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'Env/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/profile.css' %}?v=20260220b">
 </head>
 <body>
     <div class="profile-container">
@@ -17,7 +17,10 @@
 
         <div class="profile-content">
             <div class="back-button">
-                <a href="{% url 'booking' %}">Back to Booking</a>
+                <a href="{% url 'booking' %}" class="back-booking-btn">
+                    <span class="back-icon" aria-hidden="true">←</span>
+                    <span>Back to Booking</span>
+                </a>
             </div>
 
             <div class="success-message" id="successMessage"></div>

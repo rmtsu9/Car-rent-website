@@ -10,9 +10,22 @@
         admins: app.dataset.adminsUrl,
         orders: app.dataset.ordersUrl,
         orderApproveTemplate: app.dataset.orderApproveUrlTemplate,
+        orderCancelTemplate: app.dataset.orderCancelUrlTemplate,
         history: app.dataset.historyUrl,
         model: app.dataset.modelUrl,
     };
+
+    const mapConfig = {
+        shopLat: Number(app.dataset.shopLat),
+        shopLng: Number(app.dataset.shopLng),
+    };
+
+    if (!Number.isFinite(mapConfig.shopLat)) {
+        mapConfig.shopLat = null;
+    }
+    if (!Number.isFinite(mapConfig.shopLng)) {
+        mapConfig.shopLng = null;
+    }
 
     const state = {
         users: [],
@@ -64,32 +77,53 @@
         return urls.orderApproveTemplate.replace("/0/", `/${bookingId}/`);
     }
 
+    function orderCancelUrl(bookingId) {
+        return urls.orderCancelTemplate.replace("/0/", `/${bookingId}/`);
+    }
+
     function parseCoordinate(value) {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : null;
     }
 
-    function hasDeliveryCoordinates(order) {
-        return (
-            order.pickup_type === "delivery"
-            && parseCoordinate(order.delivery_lat) !== null
-            && parseCoordinate(order.delivery_lng) !== null
-        );
+    function getOrderMapCoordinates(order) {
+        if (order.pickup_type === "delivery") {
+            const deliveryLat = parseCoordinate(order.delivery_lat);
+            const deliveryLng = parseCoordinate(order.delivery_lng);
+            if (deliveryLat === null || deliveryLng === null) {
+                return null;
+            }
+            return {
+                lat: deliveryLat,
+                lng: deliveryLng,
+            };
+        }
+
+        const shopLat = parseCoordinate(mapConfig.shopLat);
+        const shopLng = parseCoordinate(mapConfig.shopLng);
+        if (shopLat === null || shopLng === null) {
+            return null;
+        }
+
+        return {
+            lat: shopLat,
+            lng: shopLng,
+        };
     }
 
-    function buildDeliveryMapUrl(lat, lng) {
+    function buildMapUrl(lat, lng) {
         return `https://www.openstreetmap.org/?mlat=${encodeURIComponent(lat)}&mlon=${encodeURIComponent(lng)}#map=16/${encodeURIComponent(lat)}/${encodeURIComponent(lng)}`;
     }
 
-    function openDeliveryMap(lat, lng) {
-        const parsedLat = parseCoordinate(lat);
-        const parsedLng = parseCoordinate(lng);
-        if (parsedLat === null || parsedLng === null) {
-            alert("This order does not have a valid delivery pin.");
+    function openOrderMap(order) {
+        const coordinates = getOrderMapCoordinates(order);
+        if (!coordinates) {
+            const mapType = order.pickup_type === "delivery" ? "delivery pin" : "shop location";
+            alert(`This order does not have a valid ${mapType}.`);
             return;
         }
 
-        const mapUrl = buildDeliveryMapUrl(parsedLat, parsedLng);
+        const mapUrl = buildMapUrl(coordinates.lat, coordinates.lng);
         window.open(mapUrl, "_blank", "noopener,noreferrer");
     }
 
@@ -190,19 +224,28 @@
         tbody.innerHTML = state.orders
             .map((order) => {
                 const actionButtons = [];
-                if (order.order_stage === "awaiting_contact") {
+                const isCancelled = order.status === "rejected";
+                const isCompleted = order.order_stage === "completed";
+
+                if (!isCancelled && !isCompleted) {
+                    if (order.order_stage === "awaiting_contact") {
+                        actionButtons.push(
+                            `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Callback</button>`
+                        );
+                    } else if (order.order_stage === "awaiting_handover") {
+                        actionButtons.push(
+                            `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Handover</button>`
+                        );
+                    }
+
                     actionButtons.push(
-                        `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Callback</button>`
-                    );
-                } else if (order.order_stage === "awaiting_handover") {
-                    actionButtons.push(
-                        `<button type="button" class="inline-btn" data-action="approve-order-stage" data-id="${order.id}">Approve Handover</button>`
+                        `<button type="button" class="inline-btn danger" data-action="cancel-order" data-id="${order.id}">Cancel Order</button>`
                     );
                 }
 
-                if (hasDeliveryCoordinates(order)) {
+                if (getOrderMapCoordinates(order)) {
                     actionButtons.push(
-                        `<button type="button" class="inline-btn map-btn" data-action="open-delivery-map" data-id="${order.id}">เปิดแผนที่จุดส่ง</button>`
+                        `<button type="button" class="inline-btn map-btn" data-action="open-order-map" data-id="${order.id}">เปิดแผนที่จุดส่ง</button>`
                     );
                 }
 
@@ -435,12 +478,27 @@
             return;
         }
 
-        if (action === "open-delivery-map") {
-            openDeliveryMap(selected.delivery_lat, selected.delivery_lng);
+        if (action === "open-order-map" || action === "open-delivery-map") {
+            openOrderMap(selected);
             return;
         }
 
         if (action !== "approve-order-stage") {
+            if (action !== "cancel-order") {
+                return;
+            }
+
+            if (!window.confirm(`Cancel Order #${selected.id}?`)) {
+                return;
+            }
+
+            try {
+                await apiRequest(orderCancelUrl(selected.id), "POST", {});
+                await loadOrders(document.getElementById("orderSearchInput").value.trim());
+                await loadDashboard();
+            } catch (error) {
+                alert(error.message);
+            }
             return;
         }
 

@@ -6,23 +6,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rental History</title>
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'Env/css/history.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/history.css' %}?v=20260220b">
 </head>
 <body>
     <div class="history-page">
         <div class="top-links">
-            <a href="{% url 'booking' %}">Back to Booking</a>
-            <a href="{% url 'order' %}">Go to Order</a>
-            <a href="{% url 'profile' %}">Profile</a>
-            <button type="button" id="refreshHistoryBtn">Refresh</button>
+            <a href="{% url 'booking' %}" class="back-booking-btn">
+                <span class="back-icon" aria-hidden="true">←</span>
+                <span>Back to Booking</span>
+            </a>
         </div>
 
         <header class="history-header">
             <h1>Rental History</h1>
-            <p>Completed orders are stored here after full payment.</p>
+            <p>Completed and cancelled orders are stored here.</p>
             <div class="header-meta">
                 <span>User: <strong>{{ user.username }}</strong></span>
-                <span>Total Completed: <strong class="js-history-count">{{ history_bookings|length }}</strong></span>
+                <span>Total History: <strong class="js-history-count">{{ history_bookings|length }}</strong></span>
             </div>
         </header>
 
@@ -40,7 +40,13 @@
                             {% endif %}
                         </small>
 
-                        <div class="status-pill">Completed</div>
+                        <div class="status-pill{% if booking.status == 'rejected' %} cancelled{% endif %}">
+                            {% if booking.status == "rejected" %}
+                                Cancelled
+                            {% else %}
+                                Completed
+                            {% endif %}
+                        </div>
 
                         <div class="history-grid">
                             <div class="item">
@@ -88,12 +94,12 @@
             </section>
         {% else %}
             <section class="empty">
-                <h2>No completed history yet</h2>
-                <p>After finishing full payment in Order page, records will appear here.</p>
+                <h2>No history yet</h2>
+                <p>Completed or cancelled orders will appear here.</p>
             </section>
         {% endif %}
     </div>
 
-    <script src="{% static 'Env/js/history.js' %}"></script>
+    <script src="{% static 'Env/js/history.js' %}?v=20260220b"></script>
 </body>
 </html>

@@ -95,6 +95,79 @@ const elements = {
     clearDeliveryPinBtn: document.getElementById("clearDeliveryPinBtn"),
 };
 
+const PROVINCES_BY_REGION = {
+    Central: [
+        "Bangkok",
+        "Ang Thong",
+        "Chai Nat",
+        "Kanchanaburi",
+        "Lopburi",
+        "Nakhon Nayok",
+        "Nakhon Pathom",
+        "Nonthaburi",
+        "Pathum Thani",
+        "Phra Nakhon Si Ayutthaya",
+        "Phetchaburi",
+        "Prachuap Khiri Khan",
+        "Ratchaburi",
+        "Samut Prakan",
+        "Samut Sakhon",
+        "Samut Songkhram",
+        "Saraburi",
+        "Sing Buri",
+        "Suphan Buri",
+    ],
+    North: [
+        "Chiang Mai",
+        "Chiang Rai",
+        "Kamphaeng Phet",
+        "Lampang",
+        "Lamphun",
+        "Mae Hong Son",
+        "Nan",
+        "Nakhon Sawan",
+        "Phayao",
+        "Phetchabun",
+        "Phichit",
+        "Phitsanulok",
+        "Phrae",
+        "Sukhothai",
+        "Tak",
+        "Uthai Thani",
+        "Uttaradit",
+    ],
+    Northeast: [
+        "Amnat Charoen",
+        "Bueng Kan",
+        "Buriram",
+        "Chaiyaphum",
+        "Kalasin",
+        "Khon Kaen",
+        "Loei",
+        "Maha Sarakham",
+        "Mukdahan",
+        "Nakhon Phanom",
+        "Nakhon Ratchasima",
+        "Nong Bua Lam Phu",
+        "Nong Khai",
+        "Roi Et",
+        "Sakon Nakhon",
+        "Sisaket",
+        "Surin",
+        "Ubon Ratchathani",
+        "Udon Thani",
+        "Yasothon",
+    ],
+};
+
+const REGION_CENTERS = {
+    Central: { lat: 14.2, lng: 100.62 },
+    North: { lat: 17.34, lng: 99.84 },
+    Northeast: { lat: 16.36, lng: 102.84 },
+};
+
+const THAILAND_CENTER = { lat: 15.87, lng: 100.99 };
+
 const provinceCenters = {
     Bangkok: { lat: 13.7563, lng: 100.5018 },
     "Chiang Mai": { lat: 18.7883, lng: 98.9853 },
@@ -117,6 +190,61 @@ if (!Number.isFinite(mapConfig.shopLat)) {
 }
 if (!Number.isFinite(mapConfig.shopLng)) {
     mapConfig.shopLng = 100.5393;
+}
+
+function getRegionByProvince(provinceName) {
+    if (!provinceName) {
+        return "";
+    }
+
+    for (const [region, provinces] of Object.entries(PROVINCES_BY_REGION)) {
+        if (provinces.includes(provinceName)) {
+            return region;
+        }
+    }
+
+    return "";
+}
+
+function isSupportedProvince(provinceName) {
+    return Boolean(getRegionByProvince(provinceName));
+}
+
+function populateProvinceSelect(selectElement) {
+    if (!selectElement) {
+        return;
+    }
+
+    const previousValue = selectElement.value;
+    selectElement.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "-- Select province --";
+    selectElement.appendChild(placeholder);
+
+    Object.entries(PROVINCES_BY_REGION).forEach(([region, provinces]) => {
+        const optGroup = document.createElement("optgroup");
+        optGroup.label = region;
+
+        provinces.forEach((province) => {
+            const option = document.createElement("option");
+            option.value = province;
+            option.textContent = province;
+            optGroup.appendChild(option);
+        });
+
+        selectElement.appendChild(optGroup);
+    });
+
+    if (isSupportedProvince(previousValue)) {
+        selectElement.value = previousValue;
+    }
+}
+
+function populateProvinceSelects() {
+    populateProvinceSelect(elements.currentProvince);
+    populateProvinceSelect(elements.destinationProvince);
 }
 
 function toYmd(date) {
@@ -475,7 +603,16 @@ function getSelectedPickupType() {
 }
 
 function getProvinceCenter(provinceName) {
-    return provinceCenters[provinceName] || { lat: mapConfig.shopLat, lng: mapConfig.shopLng };
+    if (provinceCenters[provinceName]) {
+        return provinceCenters[provinceName];
+    }
+
+    const region = getRegionByProvince(provinceName);
+    if (region && REGION_CENTERS[region]) {
+        return REGION_CENTERS[region];
+    }
+
+    return THAILAND_CENTER;
 }
 
 function escapeHtml(text) {
@@ -658,32 +795,39 @@ function initializePickupMap() {
         return;
     }
 
-    leafletMap = L.map(elements.pickupMap, {
-        zoomControl: true,
-    }).setView([mapConfig.shopLat, mapConfig.shopLng], 13);
+    try {
+        leafletMap = L.map(elements.pickupMap, {
+            zoomControl: true,
+        }).setView([mapConfig.shopLat, mapConfig.shopLng], 13);
 
-    setTileLayer(0);
+        setTileLayer(0);
 
-    leafletMap.on("click", (event) => {
-        if (state.pickupType !== "delivery") {
-            return;
-        }
-        setDeliveryPin(event.latlng.lat, event.latlng.lng);
-    });
+        leafletMap.on("click", (event) => {
+            if (state.pickupType !== "delivery") {
+                return;
+            }
+            setDeliveryPin(event.latlng.lat, event.latlng.lng);
+        });
 
-    mapLoaded = true;
-    mapLoadError = "";
-    setMapStatus("");
-    updateMapForPickupType();
+        mapLoaded = true;
+        mapLoadError = "";
+        setMapStatus("");
+        updateMapForPickupType();
 
-    // If primary Leaflet CSS failed to load, inject fallback CSS and recalculate map layout.
-    window.setTimeout(() => {
-        const computed = window.getComputedStyle(elements.pickupMap);
-        if (computed.position === "static") {
-            injectLeafletCssFallback();
-            ensureMapSize();
-        }
-    }, 40);
+        // If primary Leaflet CSS failed to load, inject fallback CSS and recalculate map layout.
+        window.setTimeout(() => {
+            const computed = window.getComputedStyle(elements.pickupMap);
+            if (computed.position === "static") {
+                injectLeafletCssFallback();
+                ensureMapSize();
+            }
+        }, 40);
+    } catch (error) {
+        mapLoaded = false;
+        mapLoadError = `Map initialization failed: ${error?.message || "unknown error"}`;
+        console.error("Leaflet initialization failed:", error);
+        setMapStatus(mapLoadError, true);
+    }
 }
 
 function validateStep2() {
@@ -890,7 +1034,9 @@ function logout() {
 window.logout = logout;
 
 document.addEventListener("DOMContentLoaded", () => {
+    populateProvinceSelects();
     initializeDateInputs();
     bindEvents();
+    initializePickupMap();
     refreshAvailability();
 });

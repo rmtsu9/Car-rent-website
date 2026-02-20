@@ -6,7 +6,7 @@
     <title>Order Tracking</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'Env/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'Env/css/order.css' %}">
+    <link rel="stylesheet" href="{% static 'Env/css/order.css' %}?v=20260220d">
 </head>
 <body>
     <div
@@ -16,7 +16,10 @@
         data-mark-notifications-read-url="{% url 'user_notifications_mark_read_api' %}"
     >
         <div class="back-button">
-            <a href="{% url 'booking' %}">Back to Booking</a>
+            <a href="{% url 'booking' %}" class="back-booking-btn">
+                <span class="back-icon" aria-hidden="true">←</span>
+                <span>Back to Booking</span>
+            </a>
         </div>
 
         <header class="order-header">
@@ -41,7 +44,13 @@
                         <h2>Order #{{ selected_booking.id }}</h2>
                         <p>{{ selected_booking.car.name }}</p>
                     </div>
-                    <span class="stage-badge">{{ selected_booking.get_order_stage_display }}</span>
+                    <span class="stage-badge{% if selected_booking.status == 'rejected' %} cancelled{% endif %}">
+                        {% if selected_booking.status == "rejected" %}
+                            Cancelled
+                        {% else %}
+                            {{ selected_booking.get_order_stage_display }}
+                        {% endif %}
+                    </span>
                 </div>
 
                 <div class="details-grid">
@@ -77,7 +86,7 @@
                     </div>
                 </div>
 
-                {% if selected_booking.pickup_type == "delivery" and selected_booking.delivery_lat is not None and selected_booking.delivery_lng is not None %}
+                {% if selected_booking.pickup_type == "delivery" %}
                     <div class="delivery-map-box">
                         <button
                             type="button"
@@ -90,6 +99,20 @@
                         {% if selected_booking.delivery_address %}
                             <p class="delivery-map-address">Pinned location: {{ selected_booking.delivery_address }}</p>
                         {% endif %}
+                    </div>
+                {% elif shop_lat is not None and shop_lng is not None %}
+                    <div class="delivery-map-box">
+                        <button
+                            type="button"
+                            class="btn-secondary open-delivery-map-btn"
+                            data-delivery-lat="{{ shop_lat }}"
+                            data-delivery-lng="{{ shop_lng }}"
+                        >
+                            เปิดแผนที่จุดส่ง
+                        </button>
+                        <p class="delivery-map-address">
+                            Self pickup location: {{ shop_name }}{% if shop_address %} - {{ shop_address }}{% endif %}
+                        </p>
                     </div>
                 {% endif %}
 
@@ -119,7 +142,7 @@
 
                 <div class="status-panel">
                     {% if selected_booking.status == "rejected" %}
-                        <p class="status-message error">This order was rejected by admin. You cannot continue this flow.</p>
+                        <p class="status-message error">This order was cancelled/rejected. You cannot continue this flow.</p>
                     {% elif selected_booking.order_stage == "completed" %}
                         <p class="status-message success">Full payment completed. This order is now saved to your History.</p>
                     {% elif selected_booking.order_stage == "awaiting_contact" %}
@@ -127,17 +150,35 @@
                     {% elif selected_booking.order_stage == "awaiting_handover" %}
                         <p class="status-message info">Waiting for admin approval to confirm pickup/delivery before full payment.</p>
                     {% elif selected_stage_action %}
-                        <form method="POST" action="{% url 'advance_order_stage' selected_booking.id %}" id="advanceStageForm">
-                            {% csrf_token %}
-                            <button
-                                type="submit"
-                                class="btn-primary advance-stage-btn"
-                                data-final-payment="{{ selected_stage_action.is_final_payment|yesno:'true,false' }}"
-                                data-action-label="{{ selected_stage_action.label }}"
-                            >
-                                {{ selected_stage_action.label }}
-                            </button>
-                        </form>
+                        <div class="status-actions">
+                            <form method="POST" action="{% url 'advance_order_stage' selected_booking.id %}" id="advanceStageForm" class="status-action-form">
+                                {% csrf_token %}
+                                <button
+                                    type="submit"
+                                    class="btn-primary advance-stage-btn"
+                                    data-final-payment="{{ selected_stage_action.is_final_payment|yesno:'true,false' }}"
+                                    data-action-label="{{ selected_stage_action.label }}"
+                                >
+                                    {{ selected_stage_action.label }}
+                                </button>
+                            </form>
+
+                            {% if selected_booking.status != "rejected" and selected_booking.order_stage != "completed" %}
+                                <form method="POST" action="{% url 'cancel_order' selected_booking.id %}" id="cancelOrderForm" class="cancel-order-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-cancel-order cancel-order-btn">Cancel this order</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if selected_booking.status != "rejected" and selected_booking.order_stage != "completed" and not selected_stage_action %}
+                        <div class="status-actions">
+                            <form method="POST" action="{% url 'cancel_order' selected_booking.id %}" id="cancelOrderForm" class="cancel-order-form">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-cancel-order cancel-order-btn">Cancel this order</button>
+                            </form>
+                        </div>
                     {% endif %}
                 </div>
             </section>
@@ -162,7 +203,13 @@
                                 <strong>#{{ booking.id }} - {{ booking.car.name }}</strong>
                                 <small>{{ booking.start_date|date:"Y-m-d" }} to {{ booking.end_date|date:"Y-m-d" }}</small>
                             </div>
-                            <span>{{ booking.get_order_stage_display }}</span>
+                            <span>
+                                {% if booking.status == "rejected" %}
+                                    Cancelled
+                                {% else %}
+                                    {{ booking.get_order_stage_display }}
+                                {% endif %}
+                            </span>
                         </a>
                     {% endfor %}
                 </div>
@@ -172,6 +219,6 @@
         </section>
     </div>
 
-    <script src="{% static 'Env/js/order.js' %}"></script>
+    <script src="{% static 'Env/js/order.js' %}?v=20260220c"></script>
 </body>
 </html>

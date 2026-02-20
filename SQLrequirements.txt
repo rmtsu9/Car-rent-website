@@ -1,16 +1,26 @@
 -- TripCraft Car Rent - PostgreSQL bootstrap + seed
 -- Run with:
 --   psql -U postgres -h localhost -f SQLrequirements.txt
+-- Demo credentials seeded by this file:
+--   admin / pass
+--   demo / pass
 --
 -- This script is idempotent:
 -- - Creates DB role and DB if missing
 -- - Seeds Admin/Customer/Car data only when Django tables already exist
+-- - Includes sample and XLSX-based car records (IF NOT EXISTS guards)
 --
 -- IMPORTANT
 -- - Table creation is handled by Django migrations.
 -- - Run this once to create DB, then run migrations, then run this again for seed data:
 --     cd django_backend
 --     python manage.py migrate
+--
+-- CAR DATA STANDARD USED IN THIS FILE
+-- - fuel_type: Diesel | EV | Petrol | Hybrid
+-- - car_type: Sedan | Coupe | SUV | Hatchback | Convertible
+
+\set ON_ERROR_STOP on
 
 -- 1) Create database role
 DO
@@ -110,6 +120,203 @@ BEGIN
             VALUES (
                 'Honda Civic', 1800, 'Petrol', '15.0 km/L',
                 'Sedan', 5, 1500, 178, TRUE
+            );
+        END IF;
+    END IF;
+END
+$$;
+
+-- 4.1) Seed additional cars from XLSX spec (idempotent)
+DO
+$$
+BEGIN
+    IF to_regclass('public.api_car') IS NULL THEN
+        RAISE NOTICE 'Skip XLSX car seed: table api_car not found. Run migrations first.';
+    ELSE
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'BMW 740d M Sport (Diesel)') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'BMW 740d M Sport (Diesel)', 4200, 'Diesel', '17.9 km/L',
+                'Sedan', 5, 2993, 286, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Audi e-tron GT quattro / RS') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Audi e-tron GT quattro / RS', 12000, 'EV', '300 Wh/km',
+                'Sedan', 5, 0, 925, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Porsche Cayenne Turbo GT') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Porsche Cayenne Turbo GT', 12000, 'Petrol', '8.5 km/L',
+                'SUV', 4, 3996, 659, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Omoda 5I FL 2024') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Omoda 5I FL 2024', 4200, 'EV', '173 Wh/km',
+                'SUV', 5, 0, 204, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Jaecoo 7I') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Jaecoo 7I', 6200, 'Petrol', '30 km/L',
+                'SUV', 5, 1499, 347, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Honda JazzIV GR6 2023') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Honda JazzIV GR6 2023', 2800, 'Petrol', '22 km/L',
+                'Hatchback', 5, 1498, 122, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Toyota YarisIV') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Toyota YarisIV', 2800, 'Petrol', '22 km/L',
+                'Hatchback', 5, 1490, 130, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Mazda3IV') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Mazda3IV', 2800, 'Petrol', '15.4 km/L',
+                'Hatchback', 5, 1998, 165, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Porsche Taycan') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Porsche Taycan', 7800, 'EV', '280 Wh/km',
+                'Hatchback', 5, 0, 408, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Porsche 911') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Porsche 911', 6200, 'Petrol', '9 km/L',
+                'Coupe', 2, 2981, 394, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Chevrolet CamaroVI FL2018') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Chevrolet CamaroVI FL2018', 4200, 'Petrol', '10.5 km/L',
+                'Coupe', 2, 1998, 275, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'McLaren GTI') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'McLaren GTI', 12000, 'Petrol', '8 km/L',
+                'Coupe', 2, 3994, 635, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Toyota GR86') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Toyota GR86', 4200, 'Petrol', '12 km/L',
+                'Coupe', 2, 2387, 235, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'BMW M4') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'BMW M4', 9500, 'Petrol', '9 km/L',
+                'Coupe', 2, 2993, 510, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Audi R8II FL2019') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Audi R8II FL2019', 12000, 'Petrol', '7.6 km/L',
+                'Convertible', 2, 5204, 620, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'Jaguar F-TypeX152 FL2016') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'Jaguar F-TypeX152 FL2016', 6200, 'Petrol', '9 km/L',
+                'Convertible', 2, 2995, 380, TRUE
+            );
+        END IF;
+
+        IF NOT EXISTS (SELECT 1 FROM api_car WHERE name = 'BMW i8') THEN
+            INSERT INTO api_car (
+                name, price_per_day, fuel_type, fuel_consumption,
+                car_type, seat_capacity, engine_cc, horsepower, is_active
+            )
+            VALUES (
+                'BMW i8', 6200, 'Hybrid', '40 km/L',
+                'Convertible', 2, 1499, 374, TRUE
             );
         END IF;
     END IF;
