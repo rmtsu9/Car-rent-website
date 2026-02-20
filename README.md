@@ -339,7 +339,9 @@ Use one of:
 - `car_type`: `Sedan`, `Coupe`, `SUV`, `Hatchback`, `Convertible`
 
 ## Security Notes (Important)
-- Passwords are stored as plain text in current implementation.
+- Passwords are stored as `SHA-256` hex in current implementation.
+- Legacy plain-text passwords are auto-upgraded to `SHA-256` after successful login.
+- Current hashing is intentionally simple (no salt); for production, use Django password hashers (`PBKDF2`/`Argon2`) instead.
 - Session auth is custom and not using Django auth user model.
 - `SECRET_KEY`, database credentials, and debug settings should be moved to environment variables before production.
 - For production, add proper WSGI/ASGI deployment, reverse proxy, HTTPS, and hardened settings.

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import uuid
@@ -115,6 +116,32 @@ def _clean_text(value):
     if value is None:
         return ""
     return str(value).strip()
+
+
+def _hash_password_sha256(raw_password):
+    return hashlib.sha256((raw_password or "").encode("utf-8")).hexdigest()
+
+
+def _is_sha256_hex(value):
+    raw = _clean_text(value).lower()
+    return len(raw) == 64 and all(char in "0123456789abcdef" for char in raw)
+
+
+def _verify_password(raw_password, stored_password):
+    raw = _clean_text(raw_password)
+    stored = _clean_text(stored_password)
+    if not raw or not stored:
+        return False, False
+
+    hashed_input = _hash_password_sha256(raw)
+    if _is_sha256_hex(stored):
+        return hashed_input == stored.lower(), False
+
+    # Backward-compat: allow legacy plain-text passwords and upgrade on success.
+    if stored == raw:
+        return True, True
+
+    return False, False
 
 
 def _normalize_choice(value, aliases):
@@ -350,19 +377,25 @@ def login(request):
         else:
             user = User.objects.filter(username=identifier).first()
 
-        if user and user.password == password:
-            request.session["user"] = {
-                "id": user.id,
-                "fullName": user.fullName,
-                "phoneNumber": user.phoneNumber,
-                "username": user.username,
-                "role": user.role,
-            }
-            request.session.set_expiry(86400)  # 24 hours
+        if user:
+            is_valid_password, needs_upgrade = _verify_password(password, user.password)
+            if is_valid_password:
+                if needs_upgrade:
+                    user.password = _hash_password_sha256(password)
+                    user.save(update_fields=["password"])
 
-            if user.role == "admin":
-                return redirect("admin")
-            return redirect("booking")
+                request.session["user"] = {
+                    "id": user.id,
+                    "fullName": user.fullName,
+                    "phoneNumber": user.phoneNumber,
+                    "username": user.username,
+                    "role": user.role,
+                }
+                request.session.set_expiry(86400)  # 24 hours
+
+                if user.role == "admin":
+                    return redirect("admin")
+                return redirect("booking")
 
         return render(
             request,
@@ -445,7 +478,7 @@ def signup(request):
             fullName=fullname,
             phoneNumber=phone_number,
             username=username,
-            password=password,
+            password=_hash_password_sha256(password),
             role="customer",
         )
         return redirect(f"{reverse('login')}?registered=1")
@@ -602,7 +635,7 @@ def admin_users_api(request):
         fullName=full_name,
         phoneNumber=phone_number,
         username=username,
-        password=password,
+        password=_hash_password_sha256(password),
         role="customer",
     )
 
@@ -661,7 +694,7 @@ def admin_user_detail_api(request, user_id):
                         {"success": False, "message": "password must be at least 4 characters"},
                         status=400,
                     )
-                user.password = password
+                user.password = _hash_password_sha256(password)
                 update_fields.append("password")
 
         if not update_fields:
@@ -737,7 +770,7 @@ def admin_admins_api(request):
         fullName=full_name,
         phoneNumber=phone_number,
         username=username,
-        password=password,
+        password=_hash_password_sha256(password),
         role="admin",
     )
 
@@ -796,7 +829,7 @@ def admin_admin_detail_api(request, user_id):
                         {"success": False, "message": "password must be at least 4 characters"},
                         status=400,
                     )
-                admin.password = password
+                admin.password = _hash_password_sha256(password)
                 update_fields.append("password")
 
         if not update_fields:
@@ -1800,13 +1833,14 @@ def profile_change_password(request):
     if user is None:
         return JsonResponse({"success": False, "message": "User not found"}, status=404)
 
-    if user.password != current_password:
+    is_valid_current_password, _ = _verify_password(current_password, user.password)
+    if not is_valid_current_password:
         return JsonResponse(
             {"success": False, "message": "Current password is incorrect"},
             status=400,
         )
 
-    user.password = new_password
+    user.password = _hash_password_sha256(new_password)
     user.save(update_fields=["password"])
 
     return JsonResponse({"success": True, "message": "Password updated"})

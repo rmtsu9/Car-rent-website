@@ -4,6 +4,8 @@
 -- Demo credentials seeded by this file:
 --   admin / pass
 --   demo / pass
+-- Password storage format:
+--   SHA-256 hex (simple hash, no salt)
 --
 -- This script is idempotent:
 -- - Creates DB role and DB if missing
@@ -63,7 +65,13 @@ BEGIN
         RAISE NOTICE 'Skip user seed: table api_user not found. Run migrations first.';
     ELSE
         INSERT INTO api_user ("fullName", "phoneNumber", username, password, role)
-        VALUES ('System Admin', '0990000000', 'admin', 'pass', 'admin')
+        VALUES (
+            'System Admin',
+            '0990000000',
+            'admin',
+            'd74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1',
+            'admin'
+        )
         ON CONFLICT (username) DO UPDATE
         SET
             "fullName" = EXCLUDED."fullName",
@@ -72,7 +80,13 @@ BEGIN
             role = EXCLUDED.role;
 
         INSERT INTO api_user ("fullName", "phoneNumber", username, password, role)
-        VALUES ('Demo Customer', '0890000000', 'demo', 'pass', 'customer')
+        VALUES (
+            'Demo Customer',
+            '0890000000',
+            'demo',
+            'd74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1',
+            'customer'
+        )
         ON CONFLICT (username) DO UPDATE
         SET
             "fullName" = EXCLUDED."fullName",
